@@ -163,7 +163,7 @@ export async function telaCandidaturas() {
 const PERGUNTAS = {
   facil: {
     pergunta: "Foi fácil chegar até aqui?",
-    opcoes: [op("muito-facil", "Muito fácil"), op("facil", "Fácil"), op("dificil", "Difícil"), op("muito-dificil", "Muito difícil")],
+    opcoes: [op("facil", "Fácil"), op("medio", "Mais ou menos"), op("dificil", "Difícil")],
   },
   fiel: {
     pergunta: "O currículo ficou fiel ao que você viveu?",
