@@ -20,7 +20,7 @@ function novaCasa() {
   // k("comando", args..., { stdin }) -> { ok, dado | erro }
   const k = (cmd, ...resto) => {
     const opts = resto.at(-1) && typeof resto.at(-1) === "object" && !Array.isArray(resto.at(-1)) ? resto.pop() : {};
-    const r = spawnSync("node", [KIT, cmd, ...resto], { env, encoding: "utf8", input: opts.stdin ?? "" });
+    const r = spawnSync("node", [KIT, cmd, ...resto], { env: { ...env, ...(opts.env ?? {}) }, encoding: "utf8", input: opts.stdin ?? "" });
     const texto = (r.status === 0 ? r.stdout : r.stderr).trim();
     let dado = null;
     try { dado = JSON.parse(texto); } catch { dado = texto; }
@@ -57,7 +57,9 @@ function conferirTela(nome, t) {
   assert.ok(t.opcoes.length >= 2 && t.opcoes.length <= 4, `${nome}: ${t.opcoes.length} opcoes (a caixa aceita de 2 a 4)`);
   assert.equal(new Set(t.opcoes.map((o) => o.rotulo)).size, t.opcoes.length, `${nome}: rotulos repetidos`);
   assert.ok(t.opcoes.filter((o) => o.recomendada).length <= 1, `${nome}: mais de uma recomendada`);
-  assert.equal(t.pergunta, t.texto, `${nome}: a pergunta da caixa deve ser o texto inteiro da tela`);
+  assert.ok(t.pergunta && !/\n/.test(t.pergunta), `${nome}: a pergunta da caixa precisa estar em uma linha so (o VS Code junta as quebras)`);
+  assert.ok(t.pergunta.length <= 900, `${nome}: pergunta longa demais (${t.pergunta.length})`);
+  assert.ok(!/https?:\/\//.test(t.pergunta) || ["lista", "vaga"].includes(t.tela), `${nome}: link cru na pergunta`);
   for (const o of t.opcoes) if (o.procedimento) procedimentosVistos.add(o.procedimento);
 }
 
@@ -103,6 +105,13 @@ test("JORNADA 1 · com currículo, do primeiro comando ao 'enviei'", () => {
     assert.ok(html.includes(v0.url), `link da vaga ${v.n} na pagina`);
     assert.ok(t.texto.includes(v0.url), `link da vaga ${v.n} no terminal`);
   }
+  assert.match(t.pergunta, /vagas-de-hoje\.html/);
+  assert.match(t.pergunta, /Abra esta lista no navegador/, "se o navegador nao abriu, o caminho e os links vao na pergunta");
+  assert.ok(/vaga-1/.test(t.pergunta), "sem a pagina aberta, a pergunta leva os links como reserva");
+  const aberta = k("abrir-lista", { env: { KIT_VAGAS_NAO_ABRIR: "simular" } }).dado;
+  assert.match(aberta.pergunta, /Abri a lista de vagas no seu navegador/);
+  assert.ok(!/vaga-1/.test(aberta.pergunta), "com a pagina aberta, a pergunta nao despeja os links");
+  assert.ok(aberta.pergunta.length < 450, "pergunta curta quando a pagina abriu");
   assert.match(t.opcoes[0].rotulo, /Comparar as 5 com o meu currículo/);
   assert.deepEqual(t.opcoes.map((o) => o.procedimento), ["comparar", "escolher-vaga", "so-olhar"]);
   const curtos = t.itens.map((i) => i.curto);
@@ -118,6 +127,7 @@ test("JORNADA 1 · com currículo, do primeiro comando ao 'enviei'", () => {
   assert.equal(ordem.length, 5);
   assert.match(ordem[4], /Empresa C/, "a vaga com 'pular' fica por ultimo");
   assert.match(t.texto, /Recarregue a página/);
+  assert.match(t.pergunta, /selo, a recomendação e o motivo/);
   assert.match(readFileSync(c.arq("vagas-de-hoje.html"), "utf8"), /Combina nº 1/, "a pagina ganha o selo apos comparar");
 
   // vaga por dentro
@@ -220,6 +230,22 @@ test("JORNADA 3 · lista vazia, 'ver mais' e 'já me candidatei'", () => {
   assert.ok(k("marcar", primeira.itens[0].curto, "enviado", "enviada por fora do kit").ok);
   const depois = k("abrir-lista").dado;
   assert.ok(!depois.itens.some((i) => i.curto === primeira.itens[0].curto), "vaga ja enviada nao volta nas listas");
+});
+
+test("RANK · a numeracao de uma comparacao antiga nao vaza para a lista nova", () => {
+  const c = novaCasa();
+  const { k } = c;
+  k("config-set", "areas", "desenvolvimento");
+  semearVagas(c, 6);
+  const l1 = k("abrir-lista").dado;
+  const curtos = l1.itens.map((i) => i.curto);
+  curtos.forEach((cc) => k("avaliacao-salvar", cc, { stdin: AVAL("aplicar") }));
+  k("tela-comparar", ...curtos);
+  assert.match(readFileSync(c.arq("vagas-de-hoje.html"), "utf8"), /Combina nº 5/);
+  k("marcar", curtos[0], "enviado", "por fora");
+  k("abrir-lista");
+  const html = readFileSync(c.arq("vagas-de-hoje.html"), "utf8");
+  assert.ok(!/Combina nº/.test(html), "lista nova nao mostra selos da comparacao anterior");
 });
 
 test("VALIDAÇÕES · cada comando recusa entrada ruim com erro em JSON e sem pilha", () => {

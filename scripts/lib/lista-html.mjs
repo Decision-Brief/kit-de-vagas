@@ -129,7 +129,7 @@ export async function escreverLista(dados) {
 
 // Abre um arquivo no programa padrao. Falhar aqui nunca derruba o kit: o caminho do arquivo e dito na tela.
 export function abrir(caminho) {
-  if (process.env.KIT_VAGAS_NAO_ABRIR) return false;
+  if (process.env.KIT_VAGAS_NAO_ABRIR) return process.env.KIT_VAGAS_NAO_ABRIR === "simular"; // "simular": nos testes, finge que abriu
   try {
     const [cmd, args] =
       process.platform === "darwin" ? ["open", [caminho]]

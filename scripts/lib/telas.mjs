@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { CASA, acharPorCurto, carregarConfig, carregarPerfil, carregarVagas, diasEntre, hoje, idAleatorio, salvarConfig } from "./casa.mjs";
 import { AREAS } from "./pontuar.mjs";
 import { resumoPerfil } from "./perfil.mjs";
-import { DIAS_PARADA, candidaturas, compararVagas, listar, marcarMostradas, vagasPorCurto } from "./vagas.mjs";
+import { DIAS_PARADA, candidaturas, compararVagas, limparRanks, listar, marcarMostradas, vagasPorCurto } from "./vagas.mjs";
 import { DIAS_AVISO, abrir, escreverLista, idadeDias, textoIdade } from "./lista-html.mjs";
 
 export const REPO_URL = "https://github.com/Decision-Brief/kit-de-vagas";
@@ -98,6 +98,7 @@ export async function abrirLista({ mais = false, abrirNavegador = true, curtos =
     const est = await carregarVagas();
     l = { vagas, lidas: est.ultimaLeitura?.lidas ?? vagas.length, combinam: est.ultimaLista?.combinam ?? vagas.length };
   } else {
+    await limparRanks(); // a numeracao da comparacao anterior nao vale para uma lista nova
     l = await listar(5, { mais });
   }
   if (!l.vagas.length) {
@@ -115,9 +116,11 @@ export async function abrirLista({ mais = false, abrirNavegador = true, curtos =
     const velha = dias !== null && dias >= DIAS_AVISO ? `  ⚠ ${textoIdade(dias)}` : "";
     return `${i + 1}  ${String(v.score).padStart(3)}  ${cortar(`${v.titulo} · ${v.empresa}`, 52)}${velha}\n       ${v.url || "(sem link)"}`;
   });
+  const curta = `${aberta ? "Abri a lista de vagas no seu navegador" : "Abra esta lista no navegador"}: ${arquivo}  •  ${l.lidas} vagas lidas, ${l.combinam} combinam ${comPerfil ? "com você" : "com o que você procura"}. Cada vaga tem o botão "Abrir vaga", que leva direto à página da empresa.  •  Você pode decidir sozinha, ou me pedir uma comparação. O que prefere?`;
   return {
     tela: "lista",
     arquivo,
+    pergunta: aberta ? curta : [curta, ...l.vagas.map((v, i) => `${i + 1}. ${v.titulo} · ${v.empresa}: ${v.url || "sem link"}`)].join("  •  "),
     itens: l.vagas.map((v, i) => ({ n: i + 1, curto: v.curto, titulo: v.titulo, empresa: v.empresa })),
     texto: [
       aberta ? `Abri a lista no seu navegador: ${arquivo}` : `Abra esta lista no navegador: ${arquivo}`,
@@ -215,6 +218,7 @@ export async function telaComparar(curtos) {
   await abrirLista({ curtos: ordem.map((v) => v.curto), abrirNavegador: false });
   return {
     tela: "comparar",
+    pergunta: `Comparei as ${ordem.length} com o seu currículo. ${frases.join(" ")} Recarregue a página do navegador: cada vaga mostra o selo, a recomendação e o motivo. O que prefere?`,
     texto: ["Qual combina mais com você", ...linhas, "", ...frases, "Recarregue a página do navegador para ver o selo de cada vaga."].join("\n"),
     opcoes: [
       op("comecar", `Ver a da ${comecar.empresa} por dentro`, { recomendada: true, procedimento: "tela-vaga", curto: comecar.curto }),

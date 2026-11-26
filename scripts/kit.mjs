@@ -15,12 +15,14 @@ import {
 } from "./lib/telas.mjs";
 
 const [cmd, ...args] = process.argv.slice(2);
-// Toda tela com opcoes leva tambem o campo "pergunta" = o texto inteiro da tela. A IA usa esse campo como a pergunta da
-// caixa de escolha, que a pessoa sempre ve. Assim a tela nao depende de a IA repetir o texto.
+// Toda tela com opcoes leva tambem o campo "pergunta": o texto da tela numa linha so (o VS Code junta as quebras de
+// linha, entao o separador e " • "). A IA usa esse campo como a pergunta da caixa de escolha, que a pessoa sempre ve.
+// Telas longas (lista de vagas, comparacao) definem uma pergunta curta propria: os detalhes ficam na pagina do navegador.
+const umaLinha = (t) => String(t).split("\n").map((l) => l.trim()).filter(Boolean).join("  •  ");
 const saida = (o) => {
   // A caixa de escolha do Claude Code exige no minimo 2 opcoes: tela com uma so ganha a saida.
   if (o && Array.isArray(o.opcoes) && o.opcoes.length === 1) o.opcoes.push({ id: "sair", rotulo: "Por hoje é só", procedimento: "sair" });
-  if (o && typeof o === "object" && !Array.isArray(o) && o.texto && Array.isArray(o.opcoes) && o.opcoes.length && !o.pergunta) o.pergunta = o.texto;
+  if (o && typeof o === "object" && !Array.isArray(o) && o.texto && Array.isArray(o.opcoes) && o.opcoes.length && !o.pergunta) o.pergunta = umaLinha(o.texto);
   console.log(JSON.stringify(o, null, 1));
 };
 

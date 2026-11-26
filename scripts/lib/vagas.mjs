@@ -145,6 +145,13 @@ export async function vagasPorCurto(curtos) {
   return curtos.map((c) => itemDe(acharPorCurto(estado, c), config));
 }
 
+export async function limparRanks() {
+  const estado = await carregarVagas();
+  let mudou = false;
+  for (const v of Object.values(estado.vagas)) if (v.rank != null) { delete v.rank; mudou = true; }
+  if (mudou) await salvarVagas(estado);
+}
+
 export async function marcarMostradas(curtos, combinam = null) {
   const estado = await carregarVagas();
   if (combinam !== null) estado.ultimaLista = { combinam };
