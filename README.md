@@ -22,6 +22,12 @@ Só entra no currículo o que **você confirmou**. Antes de montar o PDF, o kit 
 
 PDF de coluna única, texto de verdade, fontes comuns, sem foto, ícones, CPF nem endereço. É o formato que os guias de triagem automática e o checklist da própria Gupy recomendam. Os 3 visuais (Clássico, Moderno e Compacto) só mudam a tipografia e o espaço. O Moderno abre sozinho.
 
+## Em quais computadores funciona
+
+Testado no **Mac**. Em Windows e Linux deve funcionar (o kit usa só o Node.js e abre a lista no navegador padrão), mas ainda não foi testado. A lista de vagas é uma página comum e abre em qualquer navegador.
+
+**O jeito mais seguro de dar o currículo, em qualquer computador:** abra o seu PDF, copie todo o texto e cole na conversa. Passar o caminho de um PDF só funciona sem instalar nada no Mac. Em outros sistemas, o kit pede para você colar o texto. Se você usa Windows ou Linux e algo falhar, abra uma issue neste repositório.
+
 ## Requisitos
 
 - Claude Code 2.1.328 ou mais novo
