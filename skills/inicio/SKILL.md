@@ -60,6 +60,8 @@ Depois rode `KIT tela-entendi` e siga o laço. Se a opção tinha `depois`, **n�
 4. **Gerar:** escolha de 3 a 6 resultados, os com número primeiro, e agrupe as competências já confirmadas. Rode `KIT pacote <curto> <<'EOF'` com `{"titulo","posicionamento","resumo","fatos":["f1","f3"],"grupos":{"Linguagens":["Go"]},"tecnologias":{"<empresa>":["Go","PostgreSQL"]},"carta","estilo":"moderno"}` e `EOF`. A carta tem até 5 linhas. Qualquer número do título, posicionamento, resumo ou carta precisa estar num fato confirmado, e todo item de `grupos` e `tecnologias` precisa estar nas competências confirmadas. Se o programa recusar, leia o motivo, corrija e tente de novo.
 5. **Entregar:** diga que abriu o currículo (estilo Moderno) e que o Clássico e o Compacto estão na mesma pasta (`pasta`), para comparar. Se vier `semPdf`, diga o que fazer. Depois: "Leia antes de enviar. Eu não envio nada por você. Quando enviar, volte e diga *enviei*."
 
+**ja-candidatei** (opção com `curto`): rode `KIT marcar <curto> enviado "enviada por fora do kit"`, diga "Marquei. Ela não aparece mais nas próximas listas." e siga **reabrir-lista**.
+
 **corrigir-um**: pergunte o código do fato (f1, f2…) e o texto certo, em texto livre. Rode `KIT fato-corrigir <id> <texto>`. Se a pessoa disser que o fato está errado e não quer corrigir, rode `KIT fato-rejeitar <id>`.
 
 **enviei**: rode `KIT marcar <curto> enviado`, diga "Marquei como enviada. Vou lembrar de conferir daqui a 10 dias." e siga o passo 4 do laço.

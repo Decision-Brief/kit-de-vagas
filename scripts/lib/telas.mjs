@@ -168,6 +168,7 @@ export async function telaVaga(curto) {
       ].join("\n"),
       opcoes: [
         op("pacote", "Montar currículo e carta para esta vaga", { recomendada: !pular, procedimento: "gerar-pacote", curto: v.curto }),
+        op("ja", "Já me candidatei a esta", { procedimento: "ja-candidatei", curto: v.curto }),
         op("outra", "Ver outra vaga", { recomendada: pular, procedimento: "escolher-vaga" }),
       ],
     };
