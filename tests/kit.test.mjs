@@ -91,6 +91,14 @@ test("curriculo: so entra o que a pessoa confirmou, e numero inventado barra o p
   assert.match(corrigido.textoOriginal, /Liderei/);
 });
 
+test("fatos: formacao e idiomas escritos como competencia vao para a secao certa", async () => {
+  const novos = await perfilLib.proporFatos([
+    { tipo: "competencia", texto: "Formação: Bacharelado em Ciência da Computação, UFPE" },
+    { tipo: "competencia", texto: "Idiomas: Inglês avançado" },
+  ]);
+  assert.deepEqual(novos.map((f) => [f.tipo, f.texto]), [["formacao", "Bacharelado em Ciência da Computação, UFPE"], ["idioma", "Inglês avançado"]]);
+});
+
 test("telas: a ordem da primeira vez ate o menu", async () => {
   process.env.KIT_VAGAS_HOME; // pasta ja isolada
   const fresco = mkdtempSync(join(tmpdir(), "kit-vagas-estado-"));

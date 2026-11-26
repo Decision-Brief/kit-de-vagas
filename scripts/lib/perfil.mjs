@@ -14,8 +14,14 @@ export async function proporFatos(lista) {
   const perfil = await carregarPerfil();
   const novos = [];
   for (const bruto of Array.isArray(lista) ? lista : [lista]) {
-    const tipo = TIPOS.includes(bruto.tipo) ? bruto.tipo : "resultado";
-    const texto = limpo(bruto.texto);
+    let tipo = TIPOS.includes(bruto.tipo) ? bruto.tipo : "resultado";
+    let texto = limpo(bruto.texto);
+    // "Formacao: ..." e "Idiomas: ..." guardados como outro tipo vao para a secao certa.
+    const rotulo = texto.match(/^(forma[cç][aã]o|idiomas?)\s*:\s*(.+)$/i);
+    if (rotulo) {
+      tipo = /^idioma/i.test(rotulo[1]) ? "idioma" : "formacao";
+      texto = rotulo[2];
+    }
     if (!texto) throw new Error("Fato sem texto.");
     if (tipo === "resultado" && !limpo(bruto.empresa)) throw new Error(`O resultado "${texto.slice(0, 40)}..." precisa de empresa.`);
     const dup = perfil.fatos.find((f) => f.tipo === tipo && f.texto.toLowerCase() === texto.toLowerCase() && !f.rejeitado);
