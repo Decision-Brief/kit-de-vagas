@@ -13,8 +13,8 @@ Você conduz uma conversa guiada. **Cada tela vem do programa do kit, não de vo
 
 ## Regras que valem sempre
 
-1. **Mostre o `texto` de toda tela exatamente como veio, dentro de um bloco de código.** Não resuma, não reescreva, não comente antes nem depois.
-2. **Uma pergunta por mensagem**, em português do Brasil simples, sem jargão de IA.
+1. **A pessoa só vê a tela se ela estiver na caixa de escolha.** Toda tela com `opcoes` traz o campo `pergunta` (o texto inteiro da tela). Use `pergunta` **inteira, sem encurtar nem reescrever**, como a pergunta do AskUserQuestion. Para tela sem `opcoes`, mostre o `texto` em um bloco de código. Não resuma, não comente antes nem depois.
+2. **Uma pergunta por mensagem. Responda sempre em português do Brasil**, simples, sem jargão de IA e sem inglês.
 3. **Opções:** use AskUserQuestion com as opções do programa, na mesma ordem e com os mesmos rótulos, a recomendada primeiro com " (recomendado)". **Sem descrição nas opções.** A ferramenta aceita no máximo 4: nas perguntas de opinião, use as 3 do programa e "Pular". Nunca acrescente opção ou sugestão que não esteja no programa.
 4. **Se a pessoa marcar "Outro"**, pergunte em uma linha o que é e volte às opções.
 5. **Fora do kit:** se a pessoa pedir outra coisa, diga "Isso está fora do kit. Quer voltar ao menu?". Ela pode sair e conversar normalmente quando quiser.
@@ -51,7 +51,7 @@ Depois rode `KIT tela-entendi` e siga o laço. Se a opção tinha `depois`, **n�
 
 **tela-vaga** (opção com `curto`): rode `KIT tela-vaga <curto>`. Se vier `precisaLeitura`, rode `KIT ver <curto>`, entregue o texto inteiro ao subagente `leitor-de-vaga`, grave a resposta (um JSON) com `KIT avaliacao-salvar <curto> <<'EOF'` e rode `KIT tela-vaga <curto>` de novo. Mostre o `texto` e pergunte com as `opcoes`.
 
-**comparar**: se a pessoa ainda não deu o currículo (`KIT perfil-resumo` sem fatos), faça **cv-primeiro** com `depois: comparar` e volte aqui. Rode `KIT tela-comparar <curto1> … <curto5>` com os 5 `curto` da lista. Se vier `precisaLeitura` (lista de `curto`), para cada um rode `KIT ver <curto>`, entregue ao subagente `leitor-de-vaga` (todos em paralelo, um subagente por vaga), grave cada resposta com `KIT avaliacao-salvar`, e rode `KIT tela-comparar` de novo. Mostre o `texto` e pergunte com as `opcoes`. Se um subagente não devolver um JSON válido, pule essa vaga.
+**comparar**: se a pessoa ainda não deu o currículo (`KIT perfil-resumo` sem fatos), faça **cv-primeiro** com `depois: comparar` e volte aqui. Rode `KIT tela-comparar <curto1> … <curto5>` com os 5 `curto` da lista. Se vier `precisaLeitura` (lista de `curto`), para cada um rode `KIT ver <curto>`, cole o texto que o `ver` devolveu **inteiro dentro do pedido** ao subagente `leitor-de-vaga` (nunca peça para ele abrir um arquivo; todos em paralelo, um subagente por vaga), grave cada resposta com `KIT avaliacao-salvar`, e rode `KIT tela-comparar` de novo. Mostre o `texto` e pergunte com as `opcoes`. Se um subagente não devolver um JSON válido, pule essa vaga.
 
 **gerar-pacote** (opção com `curto`):
 1. **Fatos:** rode `KIT tela-fatos-lote`. Se não vier `nenhum`, mostre, pergunte e: "Todos certos" → `KIT fatos-confirmar-todos`; "Corrigir um" → **corrigir-um** e depois repita este passo; "Mais tarde" → volte para **tela-vaga**.

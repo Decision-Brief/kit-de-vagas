@@ -15,7 +15,12 @@ import {
 } from "./lib/telas.mjs";
 
 const [cmd, ...args] = process.argv.slice(2);
-const saida = (o) => console.log(JSON.stringify(o, null, 1));
+// Toda tela com opcoes leva tambem o campo "pergunta" = o texto inteiro da tela. A IA usa esse campo como a pergunta da
+// caixa de escolha, que a pessoa sempre ve. Assim a tela nao depende de a IA repetir o texto.
+const saida = (o) => {
+  if (o && typeof o === "object" && !Array.isArray(o) && o.texto && Array.isArray(o.opcoes) && o.opcoes.length && !o.pergunta) o.pergunta = o.texto;
+  console.log(JSON.stringify(o, null, 1));
+};
 
 async function lerStdin() {
   if (process.stdin.isTTY) return "";
