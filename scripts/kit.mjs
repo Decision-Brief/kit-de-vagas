@@ -3,14 +3,14 @@
 import { AREAS } from "./lib/pontuar.mjs";
 import { CASA, carregarConfig, carregarPerfil, hoje, salvarConfig } from "./lib/casa.mjs";
 import {
-  confirmarContato, confirmarFato, corrigirFato, proporFatos, proximoPendente, rejeitarFato, resumoPerfil, salvarContato,
+  confirmarContato, confirmarFato, confirmarTodos, contatoLink, corrigirFato, lacunas, proporFatos, proximoPendente, rejeitarFato, resumoPerfil, salvarContato,
 } from "./lib/perfil.mjs";
 import {
   adicionarEmpresa, candidaturas, coletar, importarColada, listar, marcar, salvarAvaliacao, textoParaLeitor,
 } from "./lib/vagas.mjs";
 import { gerarPacote } from "./lib/cv.mjs";
 import {
-  definirFeedback, estado, feedbackProxima, feedbackRegistrar, telaAvaliacao, telaCandidaturas, telaLista,
+  abrirLista, estado, feedbackProxima, feedbackRegistrar, telaCandidaturas, telaComparar, telaEntendi, telaFatosLote, telaSoOlhar, telaVaga,
 } from "./lib/telas.mjs";
 
 const [cmd, ...args] = process.argv.slice(2);
@@ -52,7 +52,7 @@ const COMANDOS = {
     const valor = resto.join(" ").trim();
     // Aceita "Pleno", "Sênior", "Brasil": o que importa e o sentido, nao a grafia.
     const norm = valor.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    if (chave === "feedback") return saida(await definirFeedback(sim(valor)));
+    if (chave === "feedback") return saida(await carregarConfig()); // opiniao nao pede mais aceite: fica so no computador
     const c = await carregarConfig();
     if (chave === "areas") {
       const lista = norm.split(/[,\s]+/).map((x) => x.trim()).filter(Boolean);
@@ -111,8 +111,32 @@ const COMANDOS = {
   async lista() {
     saida(await listar(Number(args[0]) || 5));
   },
-  async "tela-lista"() {
-    saida(await telaLista(Number(args[0]) || 5));
+  async "abrir-lista"() {
+    saida(await abrirLista({ mais: args.includes("--mais"), abrirNavegador: !args.includes("--sem-abrir") }));
+  },
+  async "tela-so-olhar"() {
+    saida(await telaSoOlhar());
+  },
+  async "tela-vaga"() {
+    saida(await telaVaga(args[0]));
+  },
+  async "tela-comparar"() {
+    saida(await telaComparar(args));
+  },
+  async "tela-entendi"() {
+    saida(await telaEntendi());
+  },
+  async "tela-fatos-lote"() {
+    saida(await telaFatosLote());
+  },
+  async "fatos-confirmar-todos"() {
+    saida(await confirmarTodos());
+  },
+  async lacunas() {
+    saida(await lacunas((await carregarConfig()).areas));
+  },
+  async "contato-link"() {
+    saida(await contatoLink(args[0], args.slice(1).join(" ")));
   },
   async ver() {
     console.log(await textoParaLeitor(args[0]));
@@ -121,7 +145,7 @@ const COMANDOS = {
     saida(await salvarAvaliacao(args[0], await lerJsonStdin()));
   },
   async "tela-avaliacao"() {
-    saida(await telaAvaliacao(args[0]));
+    saida(await telaVaga(args[0]));
   },
   async "importar-vaga"() {
     saida(await importarColada(await lerJsonStdin()));

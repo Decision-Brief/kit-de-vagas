@@ -100,7 +100,7 @@ export async function salvarContato(c) {
   const perfil = await carregarPerfil();
   perfil.contato = {
     nome: limpo(c.nome, 120), email: limpo(c.email, 120), telefone: limpo(c.telefone, 40),
-    local: limpo(c.local, 120), linkedin: limpo(c.linkedin, 200), portfolio: limpo(c.portfolio, 200),
+    local: limpo(c.local, 120), linkedin: limpo(c.linkedin, 200), github: limpo(c.github, 200), portfolio: limpo(c.portfolio, 200),
     confirmado: false,
   };
   await salvarPerfil(perfil);
@@ -125,3 +125,46 @@ export function resumoPerfil(perfil) {
 }
 
 export const fatosConfirmados = (perfil) => perfil.fatos.filter((f) => f.confirmado && !f.rejeitado);
+
+// Confirma de uma vez todos os fatos pendentes e o contato (a pessoa viu a lista inteira na tela).
+export async function confirmarTodos() {
+  const perfil = await carregarPerfil();
+  let n = 0;
+  for (const f of perfil.fatos) {
+    if (!f.confirmado && !f.rejeitado) { f.confirmado = true; f.confirmadoEm = hoje(); n++; }
+  }
+  if (perfil.contato?.nome && perfil.contato?.email) perfil.contato.confirmado = true;
+  await salvarPerfil(perfil);
+  return { confirmados: n, contatoConfirmado: Boolean(perfil.contato?.confirmado) };
+}
+
+const CAMPOS_LINK = ["github", "portfolio", "linkedin"];
+
+export async function contatoLink(campo, valor) {
+  if (!CAMPOS_LINK.includes(campo)) throw new Error(`Campos validos: ${CAMPOS_LINK.join(", ")}.`);
+  const url = limpo(valor, 200);
+  if (!/^(https?:\/\/)?[\w-]+(\.[\w-]+)+([/?#].*)?$/i.test(url)) throw new Error("Esse link nao parece um endereco.");
+  const perfil = await carregarPerfil();
+  perfil.contato = { ...(perfil.contato ?? {}), [campo]: url };
+  await salvarPerfil(perfil);
+  return perfil.contato;
+}
+
+// O que falta para o curriculo ficar mais forte. Perguntas so quando o dado realmente nao esta no perfil. Maximo 3.
+export async function lacunas(areas = []) {
+  const perfil = await carregarPerfil();
+  const c = perfil.contato ?? {};
+  const perguntas = [];
+  const semNumero = fatosConfirmados(perfil).filter((f) => f.tipo === "resultado" && !/\d/.test(f.texto));
+  for (const f of semNumero.slice(0, 2)) {
+    perguntas.push({
+      id: "metrica", fato: f.id, empresa: f.empresa,
+      trecho: f.texto.length > 80 ? f.texto.slice(0, 79) + "…" : f.texto,
+      pergunta: `Em "${f.texto.length > 80 ? f.texto.slice(0, 79) + "…" : f.texto}" (${f.empresa}) não há número. Quanto isso mudou?`,
+    });
+  }
+  const a = areas[0];
+  if (!c.github && (a === "desenvolvimento" || a === "dados")) perguntas.push({ id: "link", campo: "github", pergunta: "Quer incluir o link do seu GitHub? Recrutadores de tecnologia costumam abrir." });
+  if (!c.portfolio && (a === "design" || a === "produto")) perguntas.push({ id: "link", campo: "portfolio", pergunta: "Quer incluir o link do seu portfólio? É o que recrutadores de design e produto mais abrem." });
+  return { perguntas: perguntas.slice(0, 3) };
+}

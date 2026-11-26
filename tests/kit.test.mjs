@@ -8,6 +8,7 @@ import { spawnSync } from "node:child_process";
 
 // A pasta da pessoa e isolada por teste: nada toca o ~/kit-de-vagas real.
 process.env.KIT_VAGAS_HOME = mkdtempSync(join(tmpdir(), "kit-vagas-"));
+process.env.KIT_VAGAS_NAO_ABRIR = "1"; // os testes nunca abrem navegador nem PDF
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const { criarPontuador } = await import("../scripts/lib/pontuar.mjs");
@@ -99,31 +100,90 @@ test("fatos: formacao e idiomas escritos como competencia vao para a secao certa
   assert.deepEqual(novos.map((f) => [f.tipo, f.texto]), [["formacao", "Bacharelado em Ciência da Computação, UFPE"], ["idioma", "Inglês avançado"]]);
 });
 
-test("telas: a ordem da primeira vez ate o menu", async () => {
-  process.env.KIT_VAGAS_HOME; // pasta ja isolada
+test("telas: boas-vindas pergunta do curriculo, depois menu; nada obriga a dar o curriculo", async () => {
   const fresco = mkdtempSync(join(tmpdir(), "kit-vagas-estado-"));
   const r = spawnSync("node", ["--input-type=module", "-e", `
     process.env.KIT_VAGAS_HOME = ${JSON.stringify(fresco)};
     const { estado } = await import(${JSON.stringify(join(RAIZ, "scripts/lib/telas.mjs"))});
     const { carregarConfig, salvarConfig } = await import(${JSON.stringify(join(RAIZ, "scripts/lib/casa.mjs"))});
-    const p = await import(${JSON.stringify(join(RAIZ, "scripts/lib/perfil.mjs"))});
     const passos = [];
-    passos.push((await estado()).tela);
-    const c = await carregarConfig(); c.feedback.optin = false; await salvarConfig(c);
-    passos.push((await estado()).tela);
-    c.areas = ["desenvolvimento"]; await salvarConfig(c);
-    passos.push((await estado()).tela);
-    const [f] = await p.proporFatos([{ tipo: "resultado", empresa: "X", texto: "Fiz algo" }]);
-    passos.push((await estado()).tela);
-    await p.confirmarFato(f.id);
-    passos.push((await estado()).tela);
-    await p.salvarContato({ nome: "A", email: "a@b.c" }); await p.confirmarContato();
-    const fim = await estado();
-    passos.push(fim.tela, fim.opcoes.length, fim.opcoes[0].recomendada);
+    const e1 = await estado();
+    passos.push(e1.tela, e1.opcoes.map((o) => o.procedimento));
+    const c = await carregarConfig(); c.areas = ["desenvolvimento"]; await salvarConfig(c);
+    const e2 = await estado();
+    passos.push(e2.tela, e2.opcoes.length, e2.opcoes[2].rotulo);
     console.log(JSON.stringify(passos));
   `], { encoding: "utf8" });
   assert.equal(r.status, 0, r.stderr);
-  assert.deepEqual(JSON.parse(r.stdout), ["boas-vindas", "preferencias", "perfil", "perfil", "contato", "menu", 4, true]);
+  assert.deepEqual(JSON.parse(r.stdout), ["boas-vindas", ["cv-primeiro", "escolher-area"], "menu", 4, "Colar meu currículo"]);
+});
+
+test("curriculo: grupos e tecnologias so reorganizam competencias confirmadas", async () => {
+  const perfil = await import("../scripts/lib/casa.mjs").then((m) => m.carregarPerfil());
+  await perfilLib.proporFatos([{ tipo: "competencia", texto: "Go, PostgreSQL, Redis" }]);
+  await perfilLib.confirmarTodos();
+  const p2 = await import("../scripts/lib/casa.mjs").then((m) => m.carregarPerfil());
+  const ids = p2.fatos.filter((f) => f.tipo === "resultado" && f.confirmado).map((f) => f.id);
+  const base = { titulo: "Backend", resumo: "Backend com Go.", fatos: ids };
+  assert.deepEqual(montarPacote(p2, { ...base, grupos: { Linguagens: ["Go"], Dados: ["PostgreSQL", "Redis"] } }).erros, []);
+  const ruim = montarPacote(p2, { ...base, grupos: { Linguagens: ["Go", "Rust"] } });
+  assert.ok(ruim.erros.some((e) => /"Rust"/.test(e)), "tecnologia fora do perfil barra");
+  const emp = p2.fatos.find((f) => f.tipo === "resultado").empresa;
+  assert.ok(montarPacote(p2, { ...base, tecnologias: { [emp]: ["Go", "Kafka"] } }).erros.some((e) => /"Kafka"/.test(e)));
+  assert.ok(perfil.contato);
+});
+
+test("lacunas: so pergunta o que falta, no maximo 3", async () => {
+  await perfilLib.proporFatos([{ tipo: "resultado", empresa: "Y", cargo: "Dev", periodo: "2020", texto: "Automatizei a conciliacao de transacoes" }]);
+  await perfilLib.confirmarTodos();
+  const l = await perfilLib.lacunas(["desenvolvimento"]);
+  assert.ok(l.perguntas.length <= 3);
+  assert.ok(l.perguntas.some((q) => q.id === "metrica" && /conciliacao/.test(q.trecho)), "resultado sem numero vira pergunta");
+  assert.ok(l.perguntas.some((q) => q.id === "link" && q.campo === "github"), "dev sem github vira pergunta");
+  await perfilLib.contatoLink("github", "github.com/larissa-exemplo");
+  assert.ok(!(await perfilLib.lacunas(["desenvolvimento"])).perguntas.some((q) => q.id === "link"), "com github, nao pergunta");
+  await assert.rejects(() => perfilLib.contatoLink("github", "isso nao e link"), /endereco/);
+});
+
+test("lista no navegador: link em toda vaga, texto de terceiros escapado, link perigoso barrado", async () => {
+  const { htmlLista, linkSeguro, textoIdade } = await import("../scripts/lib/lista-html.mjs");
+  const html = htmlLista({
+    vagas: [
+      { curto: "a", titulo: "Dev <img src=x onerror=alert(1)>", empresa: "Empresa & Cia", local: "Recife", score: 88, url: "https://exemplo.com/vaga?a=1&b=2", flags: [], publicadoEm: new Date(Date.now() - 70 * 86400000).toISOString().slice(0, 10), combinaCom: ["go"], rank: 1, avaliacao: { recomendacao: "aplicar", motivo: "Bom" } },
+      { curto: "b", titulo: "Outra", empresa: "X", local: "", score: 70, url: "javascript:alert(1)", flags: [], publicadoEm: null, combinaCom: [] },
+    ],
+    lidas: 100, combinam: 2, comPerfil: true, data: "26/11/2026",
+  });
+  assert.ok(html.includes('href="https://exemplo.com/vaga?a=1&amp;b=2"'), "link da vaga presente e escapado");
+  assert.ok(!html.includes("<img src=x"), "HTML de terceiros nao passa");
+  assert.ok(!html.includes('href="javascript:'), "javascript: nunca vira link");
+  assert.ok(html.includes("confira se ainda está aberta"), "vaga com mais de 60 dias avisa");
+  assert.ok(html.includes("Combina nº 1"));
+  assert.equal(linkSeguro("ftp://x.com"), null);
+  assert.equal(textoIdade(null), "data não informada");
+});
+
+test("comparar: recomendada primeiro, 'pular' por ultimo, e as velhas sao avisadas", async () => {
+  const fresco = mkdtempSync(join(tmpdir(), "kit-vagas-cmp-"));
+  const r = spawnSync("node", ["--input-type=module", "-e", `
+    process.env.KIT_VAGAS_HOME = ${JSON.stringify(fresco)};
+    process.env.KIT_VAGAS_NAO_ABRIR = "1";
+    const { salvarVagas, salvarConfig, carregarConfig } = await import(${JSON.stringify(join(RAIZ, "scripts/lib/casa.mjs"))});
+    const { telaComparar } = await import(${JSON.stringify(join(RAIZ, "scripts/lib/telas.mjs"))});
+    const velha = new Date(Date.now() - 70 * 86400000).toISOString().slice(0, 10);
+    const nova = new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10);
+    const mk = (curto, empresa, score, rec, pub) => ({ id: curto, curto, empresa, titulo: "Dev " + empresa, local: "Brasil", score, faixa: "forte", ativa: true, status: "novo", url: "https://x.com/" + curto, flags: [], publicadoEm: pub, descricao: "", historico: [], avaliacao: { tem: ["Go"], falta: rec === "aplicar" ? [] : ["Kafka"], recomendacao: rec, motivo: "ok", em: "2026-11-26" } });
+    await salvarVagas({ vagas: { a: mk("aaaaaaa", "A", 90, "pular", nova), b: mk("bbbbbbb", "B", 80, "aplicar", velha), c: mk("ccccccc", "C", 70, "aplicar com ressalva", nova) } });
+    const t = await telaComparar(["aaaaaaa", "bbbbbbb", "ccccccc"]);
+    console.log(JSON.stringify({ ordem: t.texto.split("\\n").filter((l) => /^\\d  /.test(l)).map((l) => l.slice(0, 6)), velha: t.texto.includes("⚠"), comecar: t.opcoes[0].curto, recomendada: t.opcoes[0].recomendada, n: t.opcoes.length }));
+  `], { encoding: "utf8" });
+  assert.equal(r.status, 0, r.stderr);
+  const o = JSON.parse(r.stdout);
+  assert.deepEqual(o.ordem, ["1  B ·", "2  C ·", "3  A ·"].map((x) => x.slice(0, 6)));
+  assert.equal(o.velha, true, "a mais velha e avisada");
+  assert.equal(o.comecar, "ccccccc", "comeca pela recente que combina, nao pela de 70 dias");
+  assert.equal(o.recomendada, true);
+  assert.equal(o.n, 3);
 });
 
 test("gancho: nega tudo dentro do leitor de vaga e nao opina fora dele", () => {

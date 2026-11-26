@@ -8,14 +8,19 @@ Feito por Felipe Ribeiro, designer de produto e fundador do [Decision Brief](htt
 
 ## O que ele faz
 
-1. **Procura vagas** nas páginas públicas de centenas de empresas (Greenhouse, Ashby, Lever, Workable), em feeds de vagas remotas e na Gupy. Quem procura é um programa comum, sem IA, e dá uma nota de 0 a 100 por regra.
-2. **A IA lê só as 5 melhores** e diz o que bate com o seu perfil, o que falta e se vale aplicar.
-3. **Monta o currículo e uma carta curta** para a vaga que você escolher.
-4. **Você revisa e envia**, no site da empresa. O kit só guarda o status das suas candidaturas.
+1. **Pergunta se você já tem um currículo.** É opcional. Se tiver, ele lê o arquivo, entende o que você procura (área, nível, tecnologias) e a busca já sai do seu tamanho. Se não tiver, você só escolhe a área.
+2. **Mostra as vagas numa página no navegador**, com 5 vagas: nota, há quantos dias foi publicada (com aviso quando passa de 60 dias) e o botão **Abrir vaga**, que leva direto à página da empresa. Quem procura é um programa comum, sem IA.
+3. **Você decide sozinha, ou pede uma comparação.** Na comparação, a IA lê cada vaga contra o seu currículo e diz qual combina mais, o que falta e se vale aplicar.
+4. **Monta o currículo e uma carta curta** para a vaga que você escolher. Se faltar informação (um número, o link do seu GitHub ou portfólio), ele pergunta. Os PDFs saem em 3 visuais para você comparar.
+5. **Você revisa e envia**, no site da empresa. O kit só guarda o status das suas candidaturas e avisa quando uma ficar parada.
 
 ## A regra que não muda
 
-Só entra no currículo o que **você confirmou**. Na primeira vez, o kit lê o seu currículo e pergunta fato por fato ("É verdade, e você sabe explicar como mediu?"). O que você não confirma fica guardado como "não confirmado" e nunca aparece num PDF. Um número que não está num fato confirmado trava a geração do pacote.
+Só entra no currículo o que **você confirmou**. Antes de montar o PDF, o kit mostra todos os fatos que leu do seu currículo numa tela só, e você responde "Todos certos", "Corrigir um" ou "Mais tarde". Um número que não está num fato confirmado trava a geração do pacote. Se você não souber medir um resultado, ele fica sem número: o kit nunca inventa.
+
+## O currículo
+
+PDF de coluna única, texto de verdade, fontes comuns, sem foto, ícones, CPF nem endereço. É o formato que os guias de triagem automática e o checklist da própria Gupy recomendam. Os 3 visuais (Clássico, Moderno e Compacto) só mudam a tipografia e o espaço. O Moderno abre sozinho.
 
 ## Requisitos
 
@@ -63,7 +68,7 @@ A primeira execução leva uns 10 minutos (montar o perfil). Depois, `/vagas:ini
 
 ## Onde ficam os seus dados
 
-Tudo fica numa pasta no seu computador: `~/kit-de-vagas` (perfil, vagas lidas, pacotes, respostas de opinião). Para usar outra pasta, defina `KIT_VAGAS_HOME`. O kit **não guarda nada fora do seu computador** e o Decision Brief não recebe o seu currículo, as vagas nem o seu nome.
+Tudo fica numa pasta no seu computador: `~/kit-de-vagas` (perfil, vagas lidas, a página `vagas-de-hoje.html`, pacotes, respostas de opinião). Para usar outra pasta, defina `KIT_VAGAS_HOME`. O kit **não guarda nada fora do seu computador** e o Decision Brief não recebe o seu currículo, as vagas nem o seu nome.
 
 ## Para onde o kit faz pedidos de rede
 
@@ -82,13 +87,13 @@ A Gupy vem **ligada**, porque é onde está a maior parte das vagas do Brasil. E
 
 ## Como ele evita que a IA improvise
 
-Cada tela do menu sai de um programa, não da IA. A IA só apresenta o texto e faz a pergunta com as opções que o programa deu. A leitura de cada vaga roda num subagente que não tem permissão para usar nenhuma ferramenta, porque o texto de uma vaga vem de terceiros e pode conter instruções escondidas. A resposta dele é aceita só num formato fixo, com tamanho limitado e sem links.
+Cada tela sai de um programa, não da IA, e a lista de vagas é uma página gerada pelo programa, então o link de cada vaga aparece sempre. A IA só apresenta o texto e faz a pergunta com as opções que o programa deu. A leitura de cada vaga roda num subagente que não tem permissão para usar nenhuma ferramenta, porque o texto de uma vaga vem de terceiros e pode conter instruções escondidas. A resposta dele é aceita só num formato fixo, com tamanho limitado e sem links.
 
 Isso reduz o desvio, mas não o elimina: uma instrução em texto é um pedido, não uma garantia. As garantias fortes são as do programa.
 
 ## Opinião
 
-Na primeira execução, o kit pergunta se você aceita ajudar com respostas anônimas. Por enquanto as respostas ficam **só no seu computador** (`feedback.jsonl`). Nada é enviado.
+Depois que você envia uma candidatura, o kit faz uma pergunta curta ("O currículo ficou fiel ao que você viveu?"), sempre com a opção de pular. As respostas ficam **só no seu computador** (`feedback.jsonl`). Nada é enviado.
 
 ## Licença
 

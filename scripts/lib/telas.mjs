@@ -1,14 +1,18 @@
 // Toda tela do kit nasce aqui, em codigo. A IA so apresenta o texto e faz a pergunta com as opcoes dadas.
 import { appendFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { CASA, carregarConfig, carregarPerfil, carregarVagas, diasEntre, hoje, idAleatorio, salvarConfig, acharPorCurto } from "./casa.mjs";
+import { CASA, acharPorCurto, carregarConfig, carregarPerfil, carregarVagas, diasEntre, hoje, idAleatorio, salvarConfig } from "./casa.mjs";
+import { AREAS } from "./pontuar.mjs";
 import { resumoPerfil } from "./perfil.mjs";
-import { candidaturas, DIAS_PARADA } from "./vagas.mjs";
+import { DIAS_PARADA, candidaturas, compararVagas, listar, marcarMostradas, vagasPorCurto } from "./vagas.mjs";
+import { DIAS_AVISO, abrir, escreverLista, idadeDias, textoIdade } from "./lista-html.mjs";
 
-// Preencher quando o repositorio publico existir. Sem isso, o kit nao pede estrela.
 export const REPO_URL = "https://github.com/Decision-Brief/kit-de-vagas";
 
 const op = (id, rotulo, extra = {}) => ({ id, rotulo, ...extra });
+const cortar = (s, n) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
+const dataBR = () => new Date().toLocaleDateString("pt-BR");
+const rotuloAreas = (areas) => areas.map((a) => AREAS.areas[a]?.rotulo ?? a).join(", ");
 
 export async function estado() {
   const config = await carregarConfig();
@@ -17,49 +21,22 @@ export async function estado() {
   const cands = await candidaturas();
   const dias = config.ultimaVez ? diasEntre(config.ultimaVez) : null;
 
-  if (config.feedback.optin === null) {
+  if (!config.areas.length) {
     return {
       tela: "boas-vindas",
       texto: [
         "Kit de Vagas · por Felipe Ribeiro, Decision Brief",
-        "Acho vagas de tecnologia, avalio contra o seu perfil e monto o currículo sob medida.",
-        "Faço: ler páginas públicas de vagas, dar nota e preparar PDF.",
-        "Nunca faço: enviar candidatura, inventar experiência ou guardar seu currículo fora do seu computador.",
+        "Mostro vagas de tecnologia, com o link de cada uma.",
+        `Nada é enviado por você. Seus arquivos ficam em ${CASA}.`,
         "A Gupy vem ligada. Os termos dela restringem cópia automatizada de vagas; você pode desligar quando quiser.",
-        `Seus arquivos ficam em ${CASA}.`,
         "",
-        "Passo 1 de 4 · opinião",
-        "Quer ajudar a melhorar o kit com respostas anônimas? Nunca envio seu currículo, as vagas nem seu nome.",
+        "Você já tem um currículo?",
       ].join("\n"),
       opcoes: [
-        op("feedback-sim", "Sim, 1 pergunta por vez", { recomendada: true, comando: "config-set feedback sim" }),
-        op("feedback-nao", "Agora não", { comando: "config-set feedback nao" }),
+        op("cv", "Sim, tenho um arquivo ou texto", { recomendada: true, procedimento: "cv-primeiro" }),
+        op("sem-cv", "Ainda não, só quero ver vagas", { procedimento: "escolher-area" }),
       ],
     };
-  }
-
-  if (!config.areas.length) {
-    return {
-      tela: "preferencias",
-      procedimento: "preferencias",
-      texto: "Passo 2 de 4 · o que você procura\nVou fazer 3 perguntas rápidas: área, nível e onde.",
-      opcoes: [],
-    };
-  }
-
-  if (r.confirmados === 0 || r.pendentes > 0) {
-    return {
-      tela: "perfil",
-      procedimento: r.pendentes > 0 ? "confirmar-fatos" : "montar-perfil",
-      texto: r.pendentes > 0
-        ? `Passo 3 de 4 · perfil\nFaltam ${r.pendentes} fatos para você confirmar.`
-        : "Passo 3 de 4 · perfil\nCole o seu currículo ou diga o caminho do arquivo. Só guardo o que você confirmar.",
-      opcoes: [],
-    };
-  }
-
-  if (!r.contatoConfirmado) {
-    return { tela: "contato", procedimento: "contato", texto: "Passo 4 de 4 · contato\nConfirme os dados que vão no topo do currículo.", opcoes: [] };
   }
 
   const primeiraDoDia = config.ultimaVez !== hoje();
@@ -75,73 +52,199 @@ export async function estado() {
     };
   }
 
+  const temCv = r.confirmados + r.pendentes > 0;
   return {
     tela: "menu",
-    texto: `Kit de Vagas · Perfil pronto · ${r.confirmados} fatos · ${cands.total} candidatura${cands.total === 1 ? "" : "s"}\nO que você quer fazer agora?`,
+    texto: `Kit de Vagas · ${temCv ? "com currículo" : "sem currículo"} · ${cands.total} candidatura${cands.total === 1 ? "" : "s"}\nO que você quer fazer agora?`,
     opcoes: [
       op("vagas", "Ver as vagas de hoje", { recomendada: true, procedimento: "vagas-de-hoje" }),
       op("colada", "Avaliar uma vaga que eu colei", { procedimento: "avaliar-colada" }),
-      op("perfil", "Ver ou ajustar meu perfil", { procedimento: "ver-perfil" }),
+      temCv ? op("perfil", "Ver ou ajustar meu perfil", { procedimento: "ver-perfil" }) : op("perfil", "Colar meu currículo", { procedimento: "cv-primeiro" }),
       op("candidaturas", "Ver minhas candidaturas", { procedimento: "ver-candidaturas" }),
     ],
   };
 }
 
-const cortar = (s, n) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
-
-export async function telaLista(n = 5) {
-  const { listar } = await import("./vagas.mjs");
-  const l = await listar(n);
-  if (!l.vagas.length) {
-    return {
-      tela: "lista-vazia",
-      texto: "Não achei vagas novas que combinem com o seu perfil agora.\nPosso ajustar o que você procura ou colar uma vaga para eu avaliar.",
-      opcoes: [op("menu", "Voltar ao menu", { recomendada: true }), op("colada", "Avaliar uma vaga que eu colei", { procedimento: "avaliar-colada" })],
-    };
-  }
-  // Quem a IA recomendou vem primeiro; "pular" desce. Dentro de cada grupo, a nota manda.
-  const rank = (v) => (!v.avaliacao ? 1 : v.avaliacao.recomendacao === "aplicar" ? 0 : v.avaliacao.recomendacao === "aplicar com ressalva" ? 1 : 2);
-  l.vagas.sort((a, b) => rank(a) - rank(b) || b.score - a.score);
-  const melhor = l.vagas[0];
-  const linhas = l.vagas.map((v, i) => {
-    const rec = v.avaliacao ? ` [${v.avaliacao.recomendacao}]` : "";
-    const dica = v.curto === melhor.curto ? "  ← a que eu começaria" : "";
-    return `${i + 1}  ${String(v.score).padStart(3)}  ${cortar(`${v.titulo} · ${v.empresa}`, 56)}${rec}${dica}\n       ${v.url || "(sem link)"}`;
-  });
+// Depois de ler o curriculo: o que o kit entendeu, para a pessoa confirmar com um clique.
+export async function telaEntendi() {
+  const config = await carregarConfig();
+  const perfil = await carregarPerfil();
+  const n = perfil.fatos.filter((f) => f.tipo === "resultado" && !f.rejeitado).length;
+  const palavras = (config.palavrasChave ?? []).slice(0, 8);
   return {
-    tela: "lista",
-    texto: [`Vagas de hoje · ${l.lidas} lidas, ${l.combinam} combinam com o seu perfil`, `As ${l.vagas.length} melhores, já lidas:`, "", ...linhas].join("\n"),
-    melhor: melhor.curto,
-    itens: l.vagas.map((v, i) => ({ n: i + 1, curto: v.curto })),
+    tela: "entendi",
+    texto: [
+      `Entendi: ${config.areas.length ? rotuloAreas(config.areas) : "área não definida"}, nível ${config.nivel}, ${config.local === "global" ? "Brasil e vagas remotas do mundo" : "Brasil"}.`,
+      ...(palavras.length ? [`Tecnologias: ${palavras.join(", ")}.`] : []),
+      `Achei ${n} resultado${n === 1 ? "" : "s"} no seu currículo. Só entram no PDF depois que você confirmar.`,
+      "",
+      "Procuro vagas assim?",
+    ].join("\n"),
     opcoes: [
-      op("ver-melhor", `Ver a vaga 1 por dentro`, { recomendada: true, procedimento: "tela-avaliacao", curto: melhor.curto }),
-      op("pacote-melhor", "Gerar pacote da vaga 1", { procedimento: "gerar-pacote", curto: melhor.curto }),
-      op("outra", "Escolher outra vaga da lista", { procedimento: "escolher-outra" }),
-      op("menu", "Voltar ao menu"),
+      op("sim", "Sim, procurar", { recomendada: true, procedimento: "vagas-de-hoje" }),
+      op("ajustar", "Ajustar o que procuro", { procedimento: "preferencias" }),
     ],
   };
 }
 
-export async function telaAvaliacao(curto) {
-  const v = acharPorCurto(await carregarVagas(), curto);
-  const a = v.avaliacao;
-  if (!a) throw new Error("Essa vaga ainda nao foi avaliada. Rode o leitor antes.");
-  const linhas = [
+export async function abrirLista({ mais = false, abrirNavegador = true, curtos = null } = {}) {
+  const perfil = await carregarPerfil();
+  const r = resumoPerfil(perfil);
+  const comPerfil = r.confirmados + r.pendentes > 0;
+  let l;
+  if (curtos) {
+    const vagas = await vagasPorCurto(curtos);
+    const est = await carregarVagas();
+    l = { vagas, lidas: est.ultimaLeitura?.lidas ?? vagas.length, combinam: est.ultimaLista?.combinam ?? vagas.length };
+  } else {
+    l = await listar(5, { mais });
+  }
+  if (!l.vagas.length) {
+    return {
+      tela: "lista-vazia",
+      texto: "Não achei vagas novas que combinem com o que você procura agora.\nPosso ajustar o que você procura ou avaliar uma vaga que você colar.",
+      opcoes: [op("menu", "Voltar ao menu", { recomendada: true }), op("colada", "Avaliar uma vaga que eu colei", { procedimento: "avaliar-colada" })],
+    };
+  }
+  const arquivo = await escreverLista({ vagas: l.vagas, lidas: l.lidas, combinam: l.combinam, comPerfil, data: dataBR() });
+  const aberta = abrirNavegador ? abrir(arquivo) : false;
+  if (!curtos) await marcarMostradas(l.vagas.map((v) => v.curto), l.combinam);
+  const linhas = l.vagas.map((v, i) => {
+    const dias = idadeDias(v.publicadoEm);
+    const velha = dias !== null && dias >= DIAS_AVISO ? `  ⚠ ${textoIdade(dias)}` : "";
+    return `${i + 1}  ${String(v.score).padStart(3)}  ${cortar(`${v.titulo} · ${v.empresa}`, 52)}${velha}\n       ${v.url || "(sem link)"}`;
+  });
+  return {
+    tela: "lista",
+    arquivo,
+    itens: l.vagas.map((v, i) => ({ n: i + 1, curto: v.curto, titulo: v.titulo, empresa: v.empresa })),
+    texto: [
+      aberta ? `Abri a lista no seu navegador: ${arquivo}` : `Abra esta lista no navegador: ${arquivo}`,
+      `${l.lidas} vagas lidas, ${l.combinam} combinam ${comPerfil ? "com você" : "com o que você procura"}. Cada vaga tem o botão "Abrir vaga", que leva direto à página da empresa.`,
+      "",
+      ...linhas,
+      "",
+      "Você pode decidir sozinha, ou me pedir uma comparação. O que prefere?",
+    ].join("\n"),
+    opcoes: [
+      op("comparar", comPerfil ? "Comparar as 5 com o meu currículo" : "Qual combina mais comigo? (preciso do seu currículo)", { recomendada: true, procedimento: "comparar" }),
+      op("por-dentro", "Ver uma vaga por dentro", { procedimento: "escolher-vaga" }),
+      op("so-olhar", "Só vou olhar no navegador", { procedimento: "so-olhar" }),
+    ],
+  };
+}
+
+export async function telaSoOlhar() {
+  return {
+    tela: "so-olhar",
+    texto: `Tudo bem. A lista fica salva em ${join(CASA, "vagas-de-hoje.html")}, com o link de cada vaga.\nQuando quiser comparar ou montar um currículo, volte e digite /vagas:inicio.`,
+    opcoes: [op("comparar", "Mudei de ideia: comparar", { procedimento: "comparar" }), op("menu", "Voltar ao menu", { recomendada: true })],
+  };
+}
+
+export async function telaVaga(curto) {
+  const estado = await carregarVagas();
+  const perfil = await carregarPerfil();
+  const v = acharPorCurto(estado, curto);
+  const temPerfil = perfil.fatos.some((f) => !f.rejeitado);
+  const dias = idadeDias(v.publicadoEm);
+  const velha = dias !== null && dias >= DIAS_AVISO;
+  const base = [
     `${v.titulo} · ${v.empresa}`,
     v.url || "(sem link)",
-    `Aderência ${v.score} de 100 · ${v.local || "local não informado"}`,
-    a.tem.length ? `Você tem: ${a.tem.join("; ")}` : "Você tem: nada confirmado que a vaga peça",
-    a.falta.length ? `Pede e você não tem confirmado: ${a.falta.join("; ")}` : "Pede e você não tem confirmado: nada importante",
+    `${v.local || "local não informado"} · ${textoIdade(dias)}${velha ? ". Confira se ainda está aberta." : ""}`,
     ...(v.flags?.length ? [`Atenção: ${v.flags.join("; ")}`] : []),
-    `Recomendação: ${a.recomendacao}. ${a.motivo}`,
   ];
-  const pular = a.recomendacao === "pular";
+  const a = v.avaliacao;
+  if (a) {
+    const pular = a.recomendacao === "pular";
+    return {
+      tela: "vaga",
+      texto: [
+        ...base,
+        a.tem.length ? `Você tem: ${a.tem.join("; ")}` : "Você tem: nada do seu currículo que a vaga peça",
+        a.falta.length ? `Pede e você não tem: ${a.falta.join("; ")}` : "Pede e você não tem: nada importante",
+        `Recomendação: ${a.recomendacao}. ${a.motivo}`,
+      ].join("\n"),
+      opcoes: [
+        op("pacote", "Montar currículo e carta para esta vaga", { recomendada: !pular, procedimento: "gerar-pacote", curto: v.curto }),
+        op("outra", "Ver outra vaga", { recomendada: pular, procedimento: "escolher-vaga" }),
+      ],
+    };
+  }
+  if (!temPerfil) {
+    return {
+      tela: "vaga",
+      texto: [...base, "", "Quer saber o quanto ela combina com você?"].join("\n"),
+      opcoes: [
+        op("cv", "Colar meu currículo (4 min, uma vez só)", { recomendada: true, procedimento: "cv-primeiro", depois: { procedimento: "tela-vaga", curto: v.curto } }),
+        op("outra", "Ver outra vaga", { procedimento: "escolher-vaga" }),
+      ],
+    };
+  }
+  return { tela: "vaga", precisaLeitura: true, curto: v.curto, texto: base.join("\n"), opcoes: [] };
+}
+
+export async function telaComparar(curtos) {
+  if (!curtos.length) throw new Error("Passe os codigos das vagas da lista.");
+  const res = await compararVagas(curtos);
+  if (res.semLeitura.length) return { tela: "comparar", precisaLeitura: res.semLeitura, texto: "", opcoes: [] };
+  const ordem = res.ordem;
+  const velha = (v) => { const d = idadeDias(v.publicadoEm); return d !== null && d >= DIAS_AVISO; };
+  const naoPular = ordem.filter((v) => v.avaliacao.recomendacao !== "pular");
+  const comecar = naoPular.find((v) => !velha(v)) ?? naoPular[0] ?? ordem[0];
+  const melhor = ordem[0];
+  const linhas = ordem.map((v, i) => {
+    const d = idadeDias(v.publicadoEm);
+    return [
+      `${i + 1}  ${v.empresa} · ${cortar(v.titulo, 44)}`,
+      `   ${v.avaliacao.recomendacao} · falta: ${v.avaliacao.falta.length ? v.avaliacao.falta.slice(0, 2).join("; ") : "nada importante"}`,
+      ...(velha(v) ? [`   ⚠ publicada ${textoIdade(d)}: confira se ainda está aberta`] : []),
+    ].join("\n");
+  });
+  const frases = [];
+  if (velha(melhor) && melhor.curto !== comecar.curto) {
+    frases.push(`A que mais combina é a da ${melhor.empresa}, mas ela está publicada ${textoIdade(idadeDias(melhor.publicadoEm))}: confira se ainda está aberta.`);
+    frases.push(`Entre as recentes, eu começaria pela da ${comecar.empresa}.`);
+  } else {
+    frases.push(`A que mais combina é a da ${melhor.empresa}. Eu começaria por ela.`);
+  }
+  // atualiza a pagina com o selo "Combina nº" (sem abrir outra aba)
+  await abrirLista({ curtos: ordem.map((v) => v.curto), abrirNavegador: false });
   return {
-    tela: "avaliacao",
-    texto: linhas.join("\n"),
+    tela: "comparar",
+    texto: ["Qual combina mais com você", ...linhas, "", ...frases, "Recarregue a página do navegador para ver o selo de cada vaga."].join("\n"),
     opcoes: [
-      op("pacote", "Gerar o pacote desta vaga", { recomendada: !pular, procedimento: "gerar-pacote", curto: v.curto }),
-      op("menu", "Voltar ao menu", { recomendada: pular }),
+      op("comecar", `Ver a da ${comecar.empresa} por dentro`, { recomendada: true, procedimento: "tela-vaga", curto: comecar.curto }),
+      ...(melhor.curto !== comecar.curto ? [op("melhor", `Ver a da ${melhor.empresa} por dentro`, { procedimento: "tela-vaga", curto: melhor.curto })] : []),
+      op("lista", "Voltar à lista", { procedimento: "reabrir-lista" }),
+    ],
+  };
+}
+
+// Antes de montar o PDF: todos os fatos numa tela so. Corrigir um, se algum estiver errado.
+export async function telaFatosLote() {
+  const perfil = await carregarPerfil();
+  const pend = perfil.fatos.filter((f) => !f.confirmado && !f.rejeitado);
+  const res = pend.filter((f) => f.tipo === "resultado");
+  const juntar = (tipo) => pend.filter((f) => f.tipo === tipo).map((f) => f.texto);
+  const c = perfil.contato ?? {};
+  const linhas = [
+    ...res.slice(0, 10).map((f) => `${f.id}  ${f.empresa ? f.empresa + ": " : ""}${cortar(f.texto, 100)}`),
+    ...(res.length > 10 ? [`… e mais ${res.length - 10} resultados`] : []),
+    ...(juntar("competencia").length ? [`Competências: ${juntar("competencia").join("; ")}`] : []),
+    ...(juntar("formacao").length ? [`Formação: ${juntar("formacao").join("; ")}`] : []),
+    ...(juntar("idioma").length ? [`Idiomas: ${juntar("idioma").join("; ")}`] : []),
+    ...(c.nome && !c.confirmado ? [`Contato: ${[c.nome, c.email, c.telefone, c.local].filter(Boolean).join(" · ")}`] : []),
+  ];
+  if (!linhas.length) return { tela: "fatos-lote", nenhum: true, texto: "", opcoes: [] };
+  return {
+    tela: "fatos-lote",
+    texto: ["Estes fatos vão para o currículo. Estão certos?", "", ...linhas].join("\n"),
+    opcoes: [
+      op("todos", "Todos certos", { recomendada: true, comando: "fatos-confirmar-todos" }),
+      op("corrigir", "Corrigir um", { procedimento: "corrigir-um" }),
+      op("depois", "Mais tarde"),
     ],
   };
 }
@@ -160,53 +263,38 @@ export async function telaCandidaturas() {
   };
 }
 
-// ---------- feedback: so local por enquanto ----------
+// ---------- opiniao: perguntas curtas, sempre com "Pular", guardadas so no computador da pessoa ----------
 const PERGUNTAS = {
-  facil: {
-    pergunta: "Foi fácil chegar até aqui?",
-    opcoes: [op("facil", "Fácil"), op("medio", "Mais ou menos"), op("dificil", "Difícil")],
-  },
-  fiel: {
-    pergunta: "O currículo ficou fiel ao que você viveu?",
-    opcoes: [op("sim", "Sim"), op("quase", "Quase"), op("nao", "Não")],
-  },
-  indicaria: {
-    pergunta: "Você indicaria o kit a um colega?",
-    opcoes: [op("com-certeza", "Com certeza (9 ou 10)"), op("talvez", "Talvez (7 ou 8)"), op("dificilmente", "Dificilmente (0 a 6)")],
-  },
+  facil: { pergunta: "Foi fácil chegar até aqui?", opcoes: [op("facil", "Fácil"), op("medio", "Mais ou menos"), op("dificil", "Difícil")] },
+  fiel: { pergunta: "O currículo ficou fiel ao que você viveu?", opcoes: [op("sim", "Sim"), op("quase", "Quase"), op("nao", "Não")] },
+  indicaria: { pergunta: "Você indicaria o kit a um colega?", opcoes: [op("com-certeza", "Com certeza"), op("talvez", "Talvez"), op("dificilmente", "Dificilmente")] },
 };
 
 export async function feedbackProxima() {
   const config = await carregarConfig();
-  if (config.feedback.optin !== true) return { pergunta: null };
   const feitas = config.feedback.perguntadas;
   const vagas = Object.values((await carregarVagas()).vagas);
-  const devida = !feitas.facil && vagas.some((v) => v.avaliacao) ? "facil"
-    : !feitas.fiel && vagas.some((v) => v.status === "enviado") ? "fiel"
+  const devida = !feitas.fiel && vagas.some((v) => v.status === "enviado") ? "fiel"
+    : !feitas.facil && vagas.some((v) => v.status === "preparado" || v.status === "enviado") ? "facil"
     : !feitas.indicaria && config.criadoEm && diasEntre(config.criadoEm) >= 7 ? "indicaria"
     : null;
   if (!devida) return { pergunta: null };
   const p = PERGUNTAS[devida];
-  return { pergunta: { id: devida, texto: p.pergunta, opcoes: p.opcoes, pular: "Pular" }, depois: devida === "fiel" && REPO_URL ? `Se ajudou, uma estrela no GitHub ajuda outras pessoas a achar o kit: ${REPO_URL}` : null };
+  return {
+    pergunta: { id: devida, texto: p.pergunta, opcoes: p.opcoes, pular: "Pular" },
+    depois: devida === "fiel" ? `Se ajudou, uma estrela no GitHub ajuda outras pessoas a achar o kit: ${REPO_URL}` : null,
+  };
 }
 
 export async function feedbackRegistrar(id, resposta) {
   if (!PERGUNTAS[id]) throw new Error(`Pergunta desconhecida: ${id}`);
   const config = await carregarConfig();
-  if (config.feedback.optin !== true) throw new Error("A pessoa nao aceitou ajudar com opiniao.");
   config.feedback.perguntadas[id] = hoje();
+  if (!config.feedback.id) config.feedback.id = idAleatorio();
   await salvarConfig(config);
   if (resposta && resposta !== "pular") {
     await mkdir(CASA, { recursive: true });
     await appendFile(join(CASA, "feedback.jsonl"), JSON.stringify({ pergunta: id, resposta, em: hoje(), kit: config.feedback.id }) + "\n");
   }
   return { ok: true, guardadoSo: "no seu computador" };
-}
-
-export async function definirFeedback(sim) {
-  const config = await carregarConfig();
-  config.feedback.optin = Boolean(sim);
-  config.feedback.id = sim ? (config.feedback.id ?? idAleatorio()) : null;
-  await salvarConfig(config);
-  return config.feedback;
 }
