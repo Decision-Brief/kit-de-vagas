@@ -6,7 +6,7 @@ import {
   confirmarContato, confirmarFato, confirmarTodos, contatoLink, corrigirFato, lacunas, proporFatos, proximoPendente, rejeitarFato, resumoPerfil, salvarContato,
 } from "./lib/perfil.mjs";
 import {
-  adicionarEmpresa, candidaturas, coletar, importarColada, listar, marcar, salvarAvaliacao, textoParaLeitor,
+  acharPorLink, adicionarEmpresa, candidaturas, coletar, importarColada, listar, marcar, salvarAvaliacao, textoParaLeitor,
 } from "./lib/vagas.mjs";
 import { gerarPacote } from "./lib/cv.mjs";
 import { lerPdf } from "./lib/pdf.mjs";
@@ -136,7 +136,7 @@ const COMANDOS = {
     saida(await listar(Number(args[0]) || 5));
   },
   async "abrir-lista"() {
-    saida(await abrirLista({ mais: args.includes("--mais"), abrirNavegador: !args.includes("--sem-abrir") }));
+    saida(await abrirLista({ abrirNavegador: !args.includes("--sem-abrir"), revisitar: args.includes("--revisitar") }));
   },
   async "tela-so-olhar"() {
     saida(await telaSoOlhar());
@@ -173,6 +173,9 @@ const COMANDOS = {
   },
   async "importar-vaga"() {
     saida(await importarColada(await lerJsonStdin()));
+  },
+  async "achar-vaga"() {
+    saida(await acharPorLink(args[0]));
   },
   async "empresa-add"() {
     saida(await adicionarEmpresa(args[0]));

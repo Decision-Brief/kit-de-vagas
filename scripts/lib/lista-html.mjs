@@ -66,7 +66,7 @@ footer{color:var(--soft);font-size:13px;margin-top:20px}
 @media (max-width:560px){.job{grid-template-columns:1fr}.go{grid-column:1;grid-row:auto;text-align:center}}
 `;
 
-export function htmlLista({ vagas, lidas, combinam, comPerfil, data }) {
+export function htmlLista({ vagas, lidas, combinam, comPerfil, data, atualizadaEm = null }) {
   const cards = vagas.map((v, i) => {
     const dias = idadeDias(v.publicadoEm);
     const velha = dias !== null && dias >= DIAS_AVISO;
@@ -90,7 +90,7 @@ export function htmlLista({ vagas, lidas, combinam, comPerfil, data }) {
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vagas de hoje · Kit de Vagas</title><style>${CSS}</style></head>
 <body><main>
 <h1>Vagas de hoje</h1>
-<p class="meta">${lidas} vagas lidas · ${combinam} combinam ${comPerfil ? "com você" : "com o que você procura"} · ${escHtml(data)}</p>
+<p class="meta">${lidas} vagas lidas · ${combinam} combinam ${comPerfil ? "com você" : "com o que você procura"} · ${escHtml(data)}${atualizadaEm ? ` · lidas às ${escHtml(atualizadaEm)}` : ""}</p>
 <ol class="jobs">
 ${cards}
 </ol>

@@ -115,18 +115,21 @@ function combinaCom(v, palavras) {
   });
 }
 
-// mais = true: pula as que ja foram mostradas ("Ver mais vagas").
-export async function listar(n = 5, { mais = false } = {}) {
+// Por padrao a lista traz so vagas que a pessoa ainda nao viu. revisitar = true traz tambem as ja mostradas.
+export async function listar(n = 5, { revisitar = false } = {}) {
   const estado = await carregarVagas();
   const config = await carregarConfig();
-  const abertas = Object.values(estado.vagas)
-    .filter((v) => v.ativa && v.status === "novo" && v.score >= 45 && !(mais && v.mostradaEm))
+  const candidatas = Object.values(estado.vagas).filter((v) => v.ativa && v.status === "novo" && v.score >= 45);
+  const jaMostradas = candidatas.filter((v) => v.mostradaEm).length;
+  const abertas = candidatas
+    .filter((v) => revisitar || !v.mostradaEm)
     .sort((a, b) => b.score - a.score || (b.publicadoEm ?? "").localeCompare(a.publicadoEm ?? ""));
   const todas = Object.values(estado.vagas).filter((v) => v.ativa).length;
   return {
     total: todas,
     lidas: estado.ultimaLeitura?.lidas ?? todas,
     combinam: abertas.length,
+    jaMostradas,
     vagas: abertas.slice(0, n).map((v) => itemDe(v, config)),
   };
 }
@@ -280,3 +283,19 @@ export async function candidaturas() {
 }
 
 export { CASA };
+
+// A pessoa colou o link de uma vaga: ela ja esta no que o kit leu? (Gupy: o jobId vai no endereco, em base64.)
+export async function acharPorLink(url) {
+  const estado = await carregarVagas();
+  let jobId = null;
+  try {
+    const m = new URL(url).pathname.match(/\/job\/([^/?]+)/);
+    if (m) jobId = String(JSON.parse(Buffer.from(decodeURIComponent(m[1]), "base64").toString("utf8")).jobId);
+  } catch {
+    // link de outro sistema: so a comparacao por endereco
+  }
+  const base = (u) => String(u ?? "").split("?")[0].replace(/\/$/, "");
+  const v = Object.values(estado.vagas).find((x) => (jobId && x.fonte === "gupy" && x.id.endsWith(`:${jobId}`)) || (base(url) && base(x.url) === base(url)));
+  if (!v) return { achou: false, jobId };
+  return { achou: true, curto: v.curto, empresa: v.empresa, titulo: v.titulo, status: v.status, score: v.score, publicadoEm: v.publicadoEm ?? null };
+}

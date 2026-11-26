@@ -11,7 +11,7 @@ export const REPO_URL = "https://github.com/Decision-Brief/kit-de-vagas";
 
 const op = (id, rotulo, extra = {}) => ({ id, rotulo, ...extra });
 const cortar = (s, n) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
-const dataBR = () => new Date().toLocaleDateString("pt-BR");
+const dataBR = (iso) => (iso ? String(iso).split("-").reverse().join("/") : new Date().toLocaleDateString("pt-BR"));
 const rotuloAreas = (areas) => areas.map((a) => AREAS.areas[a]?.rotulo ?? a).join(", ");
 
 export async function estado() {
@@ -88,7 +88,7 @@ export async function telaEntendi() {
   };
 }
 
-export async function abrirLista({ mais = false, abrirNavegador = true, curtos = null } = {}) {
+export async function abrirLista({ revisitar = false, abrirNavegador = true, curtos = null } = {}) {
   const perfil = await carregarPerfil();
   const r = resumoPerfil(perfil);
   const comPerfil = r.confirmados + r.pendentes > 0;
@@ -99,16 +99,25 @@ export async function abrirLista({ mais = false, abrirNavegador = true, curtos =
     l = { vagas, lidas: est.ultimaLeitura?.lidas ?? vagas.length, combinam: est.ultimaLista?.combinam ?? vagas.length };
   } else {
     await limparRanks(); // a numeracao da comparacao anterior nao vale para uma lista nova
-    l = await listar(5, { mais });
+    l = await listar(5, { revisitar });
   }
   if (!l.vagas.length) {
+    const vistas = l.jaMostradas ?? 0;
     return {
       tela: "lista-vazia",
-      texto: "Não achei vagas novas que combinem com o que você procura agora.\nPosso ajustar o que você procura ou avaliar uma vaga que você colar.",
-      opcoes: [op("menu", "Voltar ao menu", { recomendada: true }), op("colada", "Avaliar uma vaga que eu colei", { procedimento: "avaliar-colada" })],
+      texto: vistas
+        ? `Você já viu todas as vagas que combinam com o que você procura agora (${vistas} já mostradas).\nPosso rever as já mostradas ou ler as páginas de vagas de novo, para achar as publicadas depois.`
+        : "Não achei vagas que combinem com o que você procura agora.\nPosso ler as páginas de vagas de novo, ajustar o que você procura ou avaliar uma vaga que você colar.",
+      opcoes: [
+        ...(vistas ? [op("rever", "Rever as já mostradas", { procedimento: "rever-vagas" })] : []),
+        op("buscar", "Buscar vagas de novo", { recomendada: true, procedimento: "buscar-de-novo" }),
+        op("menu", "Voltar ao menu"),
+      ],
     };
   }
-  const arquivo = await escreverLista({ vagas: l.vagas, lidas: l.lidas, combinam: l.combinam, comPerfil, data: dataBR() });
+  const cfg = await carregarConfig();
+  const atualizadaEm = cfg.ultimaColeta ? new Date(cfg.ultimaColeta).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : null;
+  const arquivo = await escreverLista({ vagas: l.vagas, lidas: l.lidas, combinam: l.combinam, comPerfil, data: dataBR(), atualizadaEm });
   const aberta = abrirNavegador ? abrir(arquivo) : false;
   if (!curtos) await marcarMostradas(l.vagas.map((v) => v.curto), l.combinam);
   const linhas = l.vagas.map((v, i) => {
@@ -156,6 +165,7 @@ export async function telaVaga(curto) {
   const base = [
     `${v.titulo} · ${v.empresa}`,
     v.url || "(sem link)",
+    ...(v.status !== "novo" ? [`Você já marcou esta como ${v.status}${v.enviadoEm ? ` em ${dataBR(v.enviadoEm)}` : ""}.`] : []),
     `${v.local || "local não informado"} · ${textoIdade(dias)}${velha ? ". Confira se ainda está aberta." : ""}`,
     ...(v.flags?.length ? [`Atenção: ${v.flags.join("; ")}`] : []),
   ];

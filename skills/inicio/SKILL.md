@@ -41,7 +41,11 @@ Depois rode `KIT tela-entendi` e siga o laço. Se a opção tinha `depois`, **n�
 
 **preferencias**: três perguntas, uma por vez: área (pode marcar mais de uma), nível (pleno, senior, lead), onde (brasil, global). Grave com `KIT config-set`. Siga para **vagas-de-hoje**.
 
-**vagas-de-hoje**: diga que leva cerca de 1 minuto e rode `KIT coletar`. Se `falhas` tiver itens, diga em uma linha quais fontes falharam e siga. Rode `KIT abrir-lista` (ou `KIT abrir-lista --mais` se a pessoa pediu mais vagas). Mostre o `texto` e pergunte com as `opcoes`. Guarde o campo `itens` (número, `curto`) para os próximos passos.
+**vagas-de-hoje**: diga que leva cerca de 1 minuto e rode `KIT coletar`. Se `falhas` tiver itens, diga em uma linha quais fontes falharam e siga. Rode `KIT abrir-lista`: ela traz só vagas que a pessoa ainda não viu, então cada vez vêm vagas novas. Se a pessoa pedir para buscar de novo, use **buscar-de-novo**. Mostre o `texto` e pergunte com as `opcoes`. Guarde o campo `itens` (número, `curto`) para os próximos passos.
+
+**buscar-de-novo**: diga que vai ler as páginas de vagas de novo (cerca de 1 minuto), rode `KIT coletar --forcar` e depois `KIT abrir-lista`. Mostre e pergunte.
+
+**rever-vagas**: rode `KIT abrir-lista --revisitar`, mostre e pergunte.
 
 **so-olhar**: rode `KIT tela-so-olhar`, mostre e pergunte.
 
@@ -68,7 +72,7 @@ Depois rode `KIT tela-entendi` e siga o laço. Se a opção tinha `depois`, **n�
 
 **enviei**: rode `KIT marcar <curto> enviado`, diga "Marquei como enviada. Vou lembrar de conferir daqui a 10 dias." e siga o passo 4 do laço.
 
-**avaliar-colada**: peça o link ou o texto da vaga. Se for link, tente ler a página com WebFetch; se não conseguir, peça o texto colado. Registre com `KIT importar-vaga <<'EOF'` e `{"empresa","titulo","local","url","texto"}`. Siga **tela-vaga** com o `curto` devolvido. Se a pessoa quiser acrescentar uma empresa à busca, rode `KIT empresa-add <link da página de vagas>`.
+**avaliar-colada**: peça o link ou o texto da vaga. Se for link, **primeiro** rode `KIT achar-vaga <link>`: se `achou`, siga **tela-vaga** com o `curto` (a vaga já foi lida pelo kit). Se não achou, tente ler a página com WebFetch; se não conseguir, peça o texto colado. Registre com `KIT importar-vaga <<'EOF'` e `{"empresa","titulo","local","url","texto"}`. Siga **tela-vaga** com o `curto` devolvido. Se a pessoa quiser acrescentar uma empresa à busca, rode `KIT empresa-add <link da página de vagas>`.
 
 **ver-perfil**: rode `KIT perfil-resumo`, mostre o resumo (contagens, áreas, nível, local e se a Gupy está ligada) e pergunte: Ajustar o que procuro (**preferencias**), Ligar ou desligar a Gupy (`KIT config-set gupy sim` ou `nao`), Voltar ao menu.
 

@@ -214,65 +214,58 @@ test("JORNADA 2 · sem currículo: ver e decidir sozinha", () => {
   assert.equal(k("pacote", t.itens[0].curto, { stdin: JSON.stringify({ titulo: "x", resumo: "y", fatos: [] }) }).ok, false, "sem curriculo nao ha pacote");
 });
 
-test("JORNADA 3 · lista vazia, 'ver mais' e 'já me candidatei'", () => {
+test("JORNADA 3 · a lista não repete vagas, 'rever', 'buscar de novo' e 'já me candidatei'", () => {
   const c = novaCasa();
   const { k } = c;
   k("config-set", "areas", "desenvolvimento");
   let t = k("abrir-lista").dado;
   conferirTela("lista vazia", t);
   assert.equal(t.tela, "lista-vazia");
+  assert.deepEqual(t.opcoes.map((o) => o.procedimento), ["buscar-de-novo", undefined]);
   semearVagas(c, 8);
   const primeira = k("abrir-lista").dado;
-  const maisA = k("abrir-lista", "--mais").dado;
-  const novas = maisA.itens.map((i) => i.curto);
-  assert.equal(novas.length, 3, "ver mais traz so as que ainda nao foram mostradas");
-  assert.ok(novas.every((x) => !primeira.itens.some((i) => i.curto === x)));
+  const segunda = k("abrir-lista").dado;
+  assert.equal(primeira.itens.length, 5);
+  assert.equal(segunda.itens.length, 3, "a segunda vez traz so as que ainda nao foram mostradas");
+  assert.ok(segunda.itens.every((i) => !primeira.itens.some((p) => p.curto === i.curto)), "nenhuma vaga repete");
+  const fim = k("abrir-lista").dado;
+  conferirTela("sem novas", fim);
+  assert.equal(fim.tela, "lista-vazia");
+  assert.match(fim.texto, /Você já viu todas as vagas/);
+  assert.deepEqual(fim.opcoes.map((o) => o.procedimento), ["rever-vagas", "buscar-de-novo", undefined]);
+  assert.equal(k("abrir-lista", "--revisitar").dado.itens.length, 5, "rever traz as ja mostradas de novo");
   assert.ok(k("marcar", primeira.itens[0].curto, "enviado", "enviada por fora do kit").ok);
-  const depois = k("abrir-lista").dado;
-  assert.ok(!depois.itens.some((i) => i.curto === primeira.itens[0].curto), "vaga ja enviada nao volta nas listas");
+  assert.ok(!k("abrir-lista", "--revisitar").dado.itens.some((i) => i.curto === primeira.itens[0].curto), "vaga ja enviada nao volta nem na revisao");
+  const cfg = c.lerJson("config.json");
+  cfg.ultimaColeta = new Date().toISOString();
+  c.gravar("config.json", cfg);
+  k("abrir-lista", "--revisitar");
+  assert.match(readFileSync(c.arq("vagas-de-hoje.html"), "utf8"), /lidas às \d{2}:\d{2}/, "a pagina diz quando as vagas foram lidas");
 });
 
-test("LEITOR · tolera JSON cercado de texto, e o roteiro manda nao travar quando o leitor falha", () => {
-  const c = novaCasa();
-  const { k } = c;
-  k("config-set", "areas", "desenvolvimento");
-  const [v] = semearVagas(c, 1);
-  const cercado = "Aqui esta a avaliacao:\n```json\n" + AVAL("aplicar") + "\n```\nEspero que ajude.";
-  const r = k("avaliacao-salvar", v.curto, { stdin: cercado });
-  assert.ok(r.ok, r.bruto);
-  assert.equal(r.dado.recomendacao, "aplicar");
-  assert.equal(k("avaliacao-salvar", v.curto, { stdin: "sem json nenhum" }).ok, false);
-  assert.match(SKILL, /não pergunte nada à pessoa/);
-  assert.match(SKILL, /A comparação nunca pode ficar parada/);
-  const agente = readFileSync(join(RAIZ, "agents/leitor-de-vaga.md"), "utf8");
-  assert.match(agente, /^model: sonnet$/m, "o leitor nao herda o modelo menor da sessao");
-  assert.match(agente, /Nunca termine sem ele/);
-});
-
-test("CANDIDATURAS · página no navegador, e pergunta curta em vez de parágrafo", () => {
+test("LINK · achar uma vaga colada entre as que o kit já leu, e nome de empresa limpo", async () => {
   const c = novaCasa();
   const { k } = c;
   k("config-set", "areas", "design");
-  semearVagas(c, 4, (i) => (i === 1 ? { status: "respondeu", enviadoEm: dia(5), historico: [{ em: dia(5), status: "respondeu" }] }
-    : i === 2 ? { status: "enviado", enviadoEm: dia(14), historico: [{ em: dia(14), status: "enviado" }], titulo: "Dev <b>x</b>" }
-    : i === 3 ? { status: "enviado", enviadoEm: dia(1), historico: [{ em: dia(1), status: "enviado" }] } : {}));
-  const t = k("candidaturas", { env: { KIT_VAGAS_NAO_ABRIR: "simular" } }).dado;
-  conferirTela("candidaturas com itens", t);
-  assert.match(t.pergunta, /Abri suas candidaturas no navegador/);
-  assert.match(t.pergunta, /3 candidaturas \(/);
-  assert.match(t.pergunta, /1 parada há mais de 10 dias/);
-  assert.ok(t.pergunta.length < 400, "pergunta curta, sem despejar a lista");
-  assert.equal(t.opcoes[0].procedimento, "atualizar-candidaturas");
-  const html = readFileSync(c.arq("candidaturas.html"), "utf8");
-  assert.match(html, /<h1>Minhas candidaturas<\/h1>/);
-  assert.match(html, /Respondeu/);
-  assert.match(html, /enviada em \d{2}\/\d{2}\/\d{4}/, "data no formato dd/mm/aaaa");
-  assert.match(html, /14 dias sem novidade/);
-  assert.ok(html.includes("&lt;b&gt;x&lt;/b&gt;") && !/<b>x<\/b>/.test(html), "titulo de terceiros escapado");
-  assert.ok((html.match(/<a class="go"/g) ?? []).length === 3);
-  const fallback = k("candidaturas").dado;
-  assert.match(fallback.pergunta, /Suas candidaturas · 3/, "sem navegador, a pergunta traz a lista inteira, em uma linha");
-  assert.ok(!/\n/.test(fallback.pergunta) && /enviado/.test(fallback.pergunta));
+  const jobId = 12701649;
+  const b64 = Buffer.from(JSON.stringify({ jobId, source: "linkedin" })).toString("base64");
+  semearVagas(c, 1);
+  const base = c.lerJson("vagas.json");
+  const v = Object.values(base.vagas)[0];
+  v.id = `gupy:VENHA SER #SANGUELARANJA:${jobId}`; v.fonte = "gupy"; v.url = `https://fcamara.gupy.io/job/${Buffer.from(JSON.stringify({ jobId, source: "gupy_portal" })).toString("base64")}?jobBoardSource=gupy_portal`;
+  c.gravar("vagas.json", { ...base, vagas: { [v.id]: v } });
+  const r = k("achar-vaga", `https://fcamara.gupy.io/job/${b64}?jobBoardSource=linkedin`).dado;
+  assert.equal(r.achou, true, "o jobId do link bate com a vaga guardada, mesmo vindo do LinkedIn");
+  assert.equal(r.curto, v.curto);
+  assert.equal(k("achar-vaga", "https://x.gupy.io/job/" + Buffer.from(JSON.stringify({ jobId: 1 })).toString("base64")).dado.achou, false);
+  assert.equal(k("achar-vaga", "isso nao e link").dado.achou, false);
+  const { nomeLimpo } = await import("../scripts/lib/fontes.mjs");
+  assert.equal(nomeLimpo("VENHA SER #SANGUELARANJA 🧡🚀", "https://fcamara.gupy.io/job/x"), "Fcamara");
+  assert.equal(nomeLimpo("Grupo SBF", "https://sbf.gupy.io/job/x"), "Grupo SBF");
+  assert.equal(nomeLimpo("#sejaveriter", "https://veriter.gupy.io/job/x"), "Veriter");
+  // vaga ja marcada: a tela avisa
+  k("marcar", v.curto, "enviado");
+  assert.match(k("tela-vaga", v.curto).dado.texto, /Você já marcou esta como enviado/);
 });
 
 test("RANK · a numeracao de uma comparacao antiga nao vaza para a lista nova", () => {

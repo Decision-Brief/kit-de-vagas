@@ -2,14 +2,29 @@ import { createHash } from "node:crypto";
 import { getJson, getText, sleep } from "./http.mjs";
 import { htmlParaTexto, limitar, decodificar } from "./texto.mjs";
 
+// Algumas paginas de carreira da Gupy usam como nome um slogan ("VENHA SER #SANGUELARANJA 🧡🚀"). Nesses casos o nome que
+// a pessoa ve vem do endereco (fcamara.gupy.io). O id continua usando o nome bruto: mudar o id faria vagas ja
+// marcadas como enviadas voltarem a aparecer.
+export function nomeLimpo(bruto, url) {
+  const estranho = /[#!🧡🚀✨💜💙]|^(venha|vem|seja|trabalhe|junte)\b/i.test(bruto) || bruto.length > 40;
+  if (!estranho) return bruto;
+  try {
+    const sub = new URL(url).hostname.split(".")[0];
+    if (sub && !["portal", "www", "gupy"].includes(sub)) return sub.charAt(0).toUpperCase() + sub.slice(1);
+  } catch {
+    // sem endereco valido: fica o nome bruto
+  }
+  return bruto;
+}
+
 export function montarVaga({ fonte, empresa, idOriginal, titulo, local, remoto, url, descricao, publicadoEm, equipe }) {
-  empresa = decodificar(String(empresa ?? "?")).trim();
-  const id = `${fonte}:${empresa}:${idOriginal}`;
+  const bruto = decodificar(String(empresa ?? "?")).trim();
+  const id = `${fonte}:${bruto}:${idOriginal}`;
   return {
     id,
     curto: createHash("sha1").update(id).digest("hex").slice(0, 7),
     fonte,
-    empresa,
+    empresa: nomeLimpo(bruto, url),
     titulo: decodificar(String(titulo ?? "")).trim(),
     local: decodificar(String(local ?? "")).trim(),
     remoto: remoto ?? null,
