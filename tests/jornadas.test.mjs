@@ -249,6 +249,32 @@ test("LEITOR · tolera JSON cercado de texto, e o roteiro manda nao travar quand
   assert.match(agente, /Nunca termine sem ele/);
 });
 
+test("CANDIDATURAS · página no navegador, e pergunta curta em vez de parágrafo", () => {
+  const c = novaCasa();
+  const { k } = c;
+  k("config-set", "areas", "design");
+  semearVagas(c, 4, (i) => (i === 1 ? { status: "respondeu", enviadoEm: dia(5), historico: [{ em: dia(5), status: "respondeu" }] }
+    : i === 2 ? { status: "enviado", enviadoEm: dia(14), historico: [{ em: dia(14), status: "enviado" }], titulo: "Dev <b>x</b>" }
+    : i === 3 ? { status: "enviado", enviadoEm: dia(1), historico: [{ em: dia(1), status: "enviado" }] } : {}));
+  const t = k("candidaturas", { env: { KIT_VAGAS_NAO_ABRIR: "simular" } }).dado;
+  conferirTela("candidaturas com itens", t);
+  assert.match(t.pergunta, /Abri suas candidaturas no navegador/);
+  assert.match(t.pergunta, /3 candidaturas \(/);
+  assert.match(t.pergunta, /1 parada há mais de 10 dias/);
+  assert.ok(t.pergunta.length < 400, "pergunta curta, sem despejar a lista");
+  assert.equal(t.opcoes[0].procedimento, "atualizar-candidaturas");
+  const html = readFileSync(c.arq("candidaturas.html"), "utf8");
+  assert.match(html, /<h1>Minhas candidaturas<\/h1>/);
+  assert.match(html, /Respondeu/);
+  assert.match(html, /enviada em \d{2}\/\d{2}\/\d{4}/, "data no formato dd/mm/aaaa");
+  assert.match(html, /14 dias sem novidade/);
+  assert.ok(html.includes("&lt;b&gt;x&lt;/b&gt;") && !/<b>x<\/b>/.test(html), "titulo de terceiros escapado");
+  assert.ok((html.match(/<a class="go"/g) ?? []).length === 3);
+  const fallback = k("candidaturas").dado;
+  assert.match(fallback.pergunta, /Suas candidaturas · 3/, "sem navegador, a pergunta traz a lista inteira, em uma linha");
+  assert.ok(!/\n/.test(fallback.pergunta) && /enviado/.test(fallback.pergunta));
+});
+
 test("RANK · a numeracao de uma comparacao antiga nao vaza para a lista nova", () => {
   const c = novaCasa();
   const { k } = c;

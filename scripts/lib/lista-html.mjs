@@ -143,3 +143,47 @@ export function abrir(caminho) {
     return false;
   }
 }
+
+// ---------- pagina das candidaturas ----------
+const ROTULO_STATUS = { preparado: "Preparada", enviado: "Enviada", visitaram: "Visualizada", respondeu: "Respondeu", rejeitado: "Rejeitada", aceito: "Aceita" };
+export const dataBR = (iso) => (iso ? String(iso).split("-").reverse().join("/") : "sem data");
+
+export function htmlCandidaturas({ lista, data }) {
+  const cont = {};
+  for (const c of lista) cont[c.status] = (cont[c.status] ?? 0) + 1;
+  const resumo = Object.entries(cont).map(([st, n]) => `${n} ${ROTULO_STATUS[st] ? ROTULO_STATUS[st].toLowerCase() : st}`).join(" · ");
+  const paradas = lista.filter((c) => c.parada).length;
+  const cards = lista.map((c, i) => {
+    const link = linkSeguro(c.url);
+    const destaque = c.status === "respondeu" || c.status === "aceito";
+    const chips = [
+      `<span class="chip ${destaque ? "nota" : ""}">${escHtml(ROTULO_STATUS[c.status] ?? c.status)}</span>`,
+      c.enviadoEm ? `<span class="chip">enviada em ${escHtml(dataBR(c.enviadoEm))}</span>` : "",
+      c.parada ? `<span class="chip warn">${escHtml(String(c.diasSemNovidade))} dias sem novidade: vale conferir</span>` : "",
+    ].join("");
+    return `<li class="job">
+  <h2>${escHtml(c.titulo)}</h2>
+  <div class="sub">${escHtml(c.empresa)}</div>
+  <div class="chips">${chips}</div>
+  ${link ? `<a class="go" href="${escHtml(link)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir vaga ${i + 1}: ${escHtml(c.titulo)}, ${escHtml(c.empresa)} (abre em outra aba)">Abrir vaga ↗</a>` : ""}
+</li>`;
+  }).join("\n");
+  return `<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Minhas candidaturas · Kit de Vagas</title><style>${CSS}</style></head>
+<body><main>
+<h1>Minhas candidaturas</h1>
+<p class="meta">${lista.length} candidatura${lista.length === 1 ? "" : "s"}${resumo ? ` · ${escHtml(resumo)}` : ""}${paradas ? ` · ${paradas} parada${paradas > 1 ? "s" : ""} há mais de 10 dias` : ""} · ${escHtml(data)}</p>
+<ol class="jobs">
+${cards}
+</ol>
+<footer>Gerada no seu computador pelo Kit de Vagas. As candidaturas ficam só no seu computador. Se mudou algo no Claude Code, recarregue esta página.</footer>
+</main></body></html>
+`;
+}
+
+export async function escreverCandidaturas(dados) {
+  await mkdir(CASA, { recursive: true });
+  const arq = join(CASA, "candidaturas.html");
+  await writeFile(arq, htmlCandidaturas(dados));
+  return arq;
+}

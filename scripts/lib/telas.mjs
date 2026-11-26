@@ -5,7 +5,7 @@ import { CASA, acharPorCurto, carregarConfig, carregarPerfil, carregarVagas, dia
 import { AREAS } from "./pontuar.mjs";
 import { resumoPerfil } from "./perfil.mjs";
 import { DIAS_PARADA, candidaturas, compararVagas, limparRanks, listar, marcarMostradas, vagasPorCurto } from "./vagas.mjs";
-import { DIAS_AVISO, abrir, escreverLista, idadeDias, textoIdade } from "./lista-html.mjs";
+import { DIAS_AVISO, abrir, escreverCandidaturas, escreverLista, idadeDias, textoIdade } from "./lista-html.mjs";
 
 export const REPO_URL = "https://github.com/Decision-Brief/kit-de-vagas";
 
@@ -258,10 +258,19 @@ export async function telaFatosLote() {
 export async function telaCandidaturas() {
   const c = await candidaturas();
   if (!c.total) return { tela: "candidaturas", texto: "Nenhuma candidatura ainda. Quando você enviar uma, volte e diga \"enviei\".", opcoes: [op("menu", "Voltar ao menu", { recomendada: true }), op("sair", "Por hoje é só", { procedimento: "sair" })] };
+  const arquivo = await escreverCandidaturas({ lista: c.lista, data: dataBR() });
+  const aberta = abrir(arquivo);
+  const cont = {};
+  for (const x of c.lista) cont[x.status] = (cont[x.status] ?? 0) + 1;
+  const resumo = Object.entries(cont).map(([st, n]) => `${n} ${st}`).join(", ");
   const linhas = c.lista.slice(0, 8).map((x) => `${x.status.padEnd(12)} ${cortar(`${x.titulo} · ${x.empresa}`, 52)}${x.parada ? `  (${x.diasSemNovidade} dias sem novidade)` : ""}`);
+  const texto = [`Suas candidaturas · ${c.total}`, "", ...linhas, ...(c.total > 8 ? [`… e mais ${c.total - 8}`] : [])].join("\n");
+  const curta = `${aberta ? "Abri suas candidaturas no navegador" : "Abra suas candidaturas no navegador"}: ${arquivo}  •  ${c.total} candidaturas (${resumo})${c.paradas.length ? `  •  ${c.paradas.length} parada${c.paradas.length > 1 ? "s" : ""} há mais de ${DIAS_PARADA} dias` : ""}. O que prefere?`;
   return {
     tela: "candidaturas",
-    texto: [`Suas candidaturas · ${c.total}`, "", ...linhas, ...(c.total > 8 ? [`… e mais ${c.total - 8}`] : [])].join("\n"),
+    arquivo,
+    pergunta: aberta ? curta : texto.split("\n").map((l) => l.trim()).filter(Boolean).join("  •  "),
+    texto,
     opcoes: [
       ...(c.paradas.length ? [op("atualizar", `Atualizar as ${c.paradas.length} paradas`, { recomendada: true, procedimento: "atualizar-candidaturas" })] : []),
       op("menu", "Voltar ao menu", { recomendada: !c.paradas.length }),

@@ -274,7 +274,7 @@ export async function candidaturas() {
     .map((v) => {
       const ultima = (v.historico ?? []).at(-1)?.em ?? v.enviadoEm ?? v.ultimaVez;
       const parada = v.status === "enviado" && ultima && diasEntre(ultima) >= DIAS_PARADA;
-      return { curto: v.curto, empresa: v.empresa, titulo: v.titulo, status: v.status, enviadoEm: v.enviadoEm ?? null, parada: Boolean(parada), diasSemNovidade: ultima ? diasEntre(ultima) : null };
+      return { curto: v.curto, empresa: v.empresa, titulo: v.titulo, url: v.url, status: v.status, enviadoEm: v.enviadoEm ?? null, parada: Boolean(parada), diasSemNovidade: ultima ? diasEntre(ultima) : null };
     });
   return { total: lista.length, paradas: lista.filter((c) => c.parada), lista };
 }
