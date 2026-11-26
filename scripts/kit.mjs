@@ -1,0 +1,161 @@
+#!/usr/bin/env node
+// Comando unico do Kit de Vagas. Toda saida e JSON (ou texto, no caso de "ver"), para a IA apresentar sem inventar.
+import { AREAS } from "./lib/pontuar.mjs";
+import { CASA, carregarConfig, carregarPerfil, hoje, salvarConfig } from "./lib/casa.mjs";
+import {
+  confirmarContato, confirmarFato, corrigirFato, proporFatos, proximoPendente, rejeitarFato, resumoPerfil, salvarContato,
+} from "./lib/perfil.mjs";
+import {
+  adicionarEmpresa, candidaturas, coletar, importarColada, listar, marcar, salvarAvaliacao, textoParaLeitor,
+} from "./lib/vagas.mjs";
+import { gerarPacote } from "./lib/cv.mjs";
+import {
+  definirFeedback, estado, feedbackProxima, feedbackRegistrar, telaAvaliacao, telaCandidaturas, telaLista,
+} from "./lib/telas.mjs";
+
+const [cmd, ...args] = process.argv.slice(2);
+const saida = (o) => console.log(JSON.stringify(o, null, 1));
+
+async function lerStdin() {
+  if (process.stdin.isTTY) return "";
+  let s = "";
+  process.stdin.setEncoding("utf8");
+  for await (const c of process.stdin) s += c;
+  return s.trim();
+}
+async function lerJsonStdin() {
+  const s = await lerStdin();
+  if (!s) throw new Error("Esperava um JSON na entrada (use <<'EOF').");
+  try {
+    return JSON.parse(s);
+  } catch {
+    throw new Error("O JSON da entrada esta invalido.");
+  }
+}
+const sim = (v) => /^(sim|s|true|1|ligar|ligada)$/i.test(String(v ?? ""));
+
+const COMANDOS = {
+  async estado() {
+    const e = await estado();
+    const c = await carregarConfig();
+    c.ultimaVez = hoje();
+    await salvarConfig(c);
+    saida(e);
+  },
+
+  async config() {
+    saida(await carregarConfig());
+  },
+
+  async "config-set"() {
+    const [chave, ...resto] = args;
+    const valor = resto.join(" ").trim();
+    if (chave === "feedback") return saida(await definirFeedback(sim(valor)));
+    const c = await carregarConfig();
+    if (chave === "areas") {
+      const lista = valor.split(/[,\s]+/).map((x) => x.trim().toLowerCase()).filter(Boolean);
+      const ruins = lista.filter((a) => !AREAS.areas[a]);
+      if (ruins.length || !lista.length) throw new Error(`Areas validas: ${Object.keys(AREAS.areas).join(", ")}.`);
+      c.areas = lista;
+    } else if (chave === "nivel") {
+      if (!["pleno", "senior", "lead"].includes(valor)) throw new Error("Niveis validos: pleno, senior, lead.");
+      c.nivel = valor;
+    } else if (chave === "local") {
+      if (!["brasil", "global"].includes(valor)) throw new Error("Locais validos: brasil, global.");
+      c.local = valor;
+    } else if (chave === "palavras") {
+      c.palavrasChave = valor.split(",").map((x) => x.trim()).filter(Boolean).slice(0, 20);
+    } else if (chave === "gupy") {
+      c.fontes.gupy = sim(valor);
+    } else {
+      throw new Error("Chaves validas: areas, nivel, local, palavras, gupy, feedback.");
+    }
+    c.ultimaColeta = null;
+    await salvarConfig(c);
+    saida(c);
+  },
+
+  async "perfil-resumo"() {
+    const p = await carregarPerfil();
+    const c = await carregarConfig();
+    saida({ ...resumoPerfil(p), busca: { areas: c.areas, nivel: c.nivel, local: c.local, gupy: c.fontes.gupy, palavras: c.palavrasChave }, contato: p.contato, fatos: p.fatos.filter((f) => !f.rejeitado).map((f) => ({ id: f.id, tipo: f.tipo, empresa: f.empresa, texto: f.texto, confirmado: f.confirmado })) });
+  },
+  async "fato-propor"() {
+    saida({ propostos: (await proporFatos(await lerJsonStdin())).map((f) => f.id) });
+  },
+  async "fato-proximo"() {
+    saida(await proximoPendente());
+  },
+  async "fato-confirmar"() {
+    saida(await confirmarFato(args[0]));
+  },
+  async "fato-corrigir"() {
+    const texto = args.slice(1).join(" ") || (await lerStdin());
+    saida(await corrigirFato(args[0], texto));
+  },
+  async "fato-rejeitar"() {
+    saida(await rejeitarFato(args[0]));
+  },
+  async contato() {
+    saida(await salvarContato(await lerJsonStdin()));
+  },
+  async "contato-confirmar"() {
+    saida(await confirmarContato());
+  },
+
+  async coletar() {
+    saida(await coletar({ forcar: args.includes("--forcar") }));
+  },
+  async lista() {
+    saida(await listar(Number(args[0]) || 5));
+  },
+  async "tela-lista"() {
+    saida(await telaLista(Number(args[0]) || 5));
+  },
+  async ver() {
+    console.log(await textoParaLeitor(args[0]));
+  },
+  async "avaliacao-salvar"() {
+    saida(await salvarAvaliacao(args[0], await lerJsonStdin()));
+  },
+  async "tela-avaliacao"() {
+    saida(await telaAvaliacao(args[0]));
+  },
+  async "importar-vaga"() {
+    saida(await importarColada(await lerJsonStdin()));
+  },
+  async "empresa-add"() {
+    saida(await adicionarEmpresa(args[0]));
+  },
+  async marcar() {
+    saida(await marcar(args[0], args[1], args.slice(2).join(" ")));
+  },
+  async candidaturas() {
+    saida(await telaCandidaturas());
+  },
+  async paradas() {
+    saida((await candidaturas()).paradas);
+  },
+  async pacote() {
+    saida(await gerarPacote(args[0], await lerJsonStdin()));
+  },
+
+  async "feedback-proxima"() {
+    saida(await feedbackProxima());
+  },
+  async "feedback-registrar"() {
+    saida(await feedbackRegistrar(args[0], args[1]));
+  },
+
+  async ajuda() {
+    saida({ pasta: CASA, comandos: Object.keys(COMANDOS) });
+  },
+};
+
+try {
+  if (!COMANDOS[cmd]) throw new Error(`Comando desconhecido: "${cmd ?? ""}". Rode: ajuda`);
+  await COMANDOS[cmd]();
+} catch (e) {
+  console.error(JSON.stringify({ erro: e.message }));
+  process.exit(1);
+}

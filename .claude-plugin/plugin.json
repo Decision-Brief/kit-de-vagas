@@ -1,0 +1,22 @@
+{
+  "name": "vagas",
+  "version": "0.1.0",
+  "description": "Kit de Vagas para Tecnologia: acha vagas, avalia cada uma contra o seu perfil confirmado e monta o currículo sob medida. Nunca envia nada por você.",
+  "author": { "name": "Felipe Ribeiro", "url": "https://decision-brief.com" },
+  "homepage": "https://decision-brief.com",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "keywords": ["vagas", "carreira", "curriculo", "tecnologia"],
+  "network": {
+    "hosts": [
+      "boards-api.greenhouse.io",
+      "api.lever.co",
+      "api.eu.lever.co",
+      "api.ashbyhq.com",
+      "apply.workable.com",
+      "remotive.com",
+      "remoteok.com",
+      "weworkremotely.com",
+      "portal.gupy.io"
+    ]
+  }
+}

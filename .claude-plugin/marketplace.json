@@ -1,0 +1,12 @@
+{
+  "name": "kit-de-vagas",
+  "owner": { "name": "Felipe Ribeiro", "url": "https://decision-brief.com" },
+  "metadata": { "description": "Kit de Vagas para Tecnologia, em português." },
+  "plugins": [
+    {
+      "name": "vagas",
+      "source": "./",
+      "description": "Acha vagas de tecnologia, avalia contra o seu perfil confirmado e monta o currículo sob medida. Nunca envia nada por você."
+    }
+  ]
+}

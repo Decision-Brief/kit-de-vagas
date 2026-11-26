@@ -1,0 +1,80 @@
+{
+  "_leia": "Expressoes regulares, sem acento e em minusculas. Mexer aqui muda o que o kit considera uma boa vaga.",
+  "comum": {
+    "senioridadeExcluir": "junior|\\bjr\\b|estagi|\\bintern\\b|internship|trainee|assistente|assistant|apprentice|entry.?level",
+    "niveis": {
+      "pleno": "pleno|\\bpl\\b|\\bmid\\b|mid.?level|\\bii\\b|intermediate",
+      "senior": "senior|\\bsr\\b|\\biii\\b|staff|principal|especialista|specialist",
+      "lead": "\\blead\\b|head|manager|gerente|coordenador|coordinator|director|diretor|principal|staff|\\blider\\b"
+    },
+    "lideranca": "\\blead\\b|head|manager|gerente|coordenador|coordinator|director|diretor|principal|staff|\\blider\\b",
+    "localBrasil": "brasil|brazil|\\bbr\\b|sao paulo|\\bsp\\b|barueri|brasilia|campinas|rio de janeiro|belo horizonte|porto alegre|curitiba|florianopolis|recife|remoto",
+    "localAmplo": "latam|latin america|americas|worldwide|anywhere|global|everywhere|south america|america latina",
+    "localRestrito": "united states|\\busa\\b|\\bus\\b|u\\.s\\.|canada|united kingdom|\\buk\\b|europe|emea|apac|asia|north america|germany|india|australia|singapore|israel|ireland|france|netherlands|poland|spain|portugal|mexico|argentina|colombia|chile|new york|\\bnyc\\b|san francisco|seattle|austin|boston|chicago|los angeles|denver|atlanta|toronto|ontario|vancouver|london|berlin|dublin|paris|amsterdam|madrid|lisbon|riyadh|dubai|tel aviv|bangalore|sydney|palo alto|miami|durham|virginia|, ca\\b|, ny\\b|, tx\\b|, ma\\b|, wa\\b|, co\\b|, ga\\b|, il\\b|, fl\\b",
+    "descricaoBancoDeTalentos": "banco de talentos|talent pool|talent community|talent network|cadastro reserva",
+    "descricaoExigeEUA": "authorized to work in the (u\\.?s|united states)|must (be located|reside|live) in the (u\\.?s|united states)|us work authorization|work authorization in the (u\\.?s|united states)|unable to sponsor|no sponsorship|without sponsorship|cannot sponsor",
+    "limiares": { "forte": 75, "bom": 60, "talvez": 45 },
+    "diasAntiga": 45,
+    "diasMuitoAntiga": 90,
+    "diasParada": 180
+  },
+  "areas": {
+    "desenvolvimento": {
+      "rotulo": "Desenvolvimento",
+      "titulosAlvo": [
+        { "re": "back.?end|server.?side", "pts": 50, "tema": "backend" },
+        { "re": "full.?stack", "pts": 48, "tema": "full stack" },
+        { "re": "front.?end|web developer|desenvolvedor web", "pts": 48, "tema": "frontend" },
+        { "re": "software engineer|engenheir[oa] de software|desenvolvedor|developer|programador", "pts": 46, "tema": "software" },
+        { "re": "mobile|android|\\bios\\b|react native|flutter", "pts": 44, "tema": "mobile" },
+        { "re": "devops|\\bsre\\b|site reliability|platform engineer|engenheir[oa] de plataforma|infraestrutura|cloud engineer", "pts": 42, "tema": "plataforma" },
+        { "re": "\\bqa\\b|quality assurance|sdet|test automation|automacao de teste", "pts": 34, "tema": "qualidade" }
+      ],
+      "excluir": "designer|\\bdesign\\b|product manager|gerente de produto|data scien|cientista|data analyst|analista de dados|\\bux\\b|\\bui\\b|marketing|sales|vendas|support|suporte|customer|recruit|recrut|counsel|juridic|account|contador|help ?desk|sales engineer",
+      "gupy": ["desenvolvedor backend", "desenvolvedor frontend", "desenvolvedor full stack", "engenheiro de software", "desenvolvedor java", "desenvolvedor node", "desenvolvedor python", "desenvolvedor mobile", "devops", "sre"],
+      "remotive": "software-dev",
+      "wwr": "remote-programming-jobs"
+    },
+    "design": {
+      "rotulo": "Design",
+      "titulosAlvo": [
+        { "re": "conversation|conversacional|content design|ux writ|ux copy|designer de conversa", "pts": 50, "tema": "conversation" },
+        { "re": "product design|designer de produto|design de produto", "pts": 48, "tema": "produto" },
+        { "re": "\\bux\\b|\\bui\\b|ux ?/ ?ui|ui ?/ ?ux|user experience|experiencia do usuario", "pts": 46, "tema": "ux" },
+        { "re": "interaction design|interacao|experience design|design de experiencia|designer de experiencia", "pts": 44, "tema": "interacao" },
+        { "re": "design system|designops|design ops", "pts": 40, "tema": "design system" },
+        { "re": "service design|design de servico", "pts": 36, "tema": "servico" },
+        { "re": "visual design|designer visual|digital designer|web designer", "pts": 30, "tema": "visual" }
+      ],
+      "excluir": "graphic|grafico|motion|\\b3d\\b|video|ilustra|illustrat|art director|diretor de arte|industrial|fashion|moda|interior|packaging|embalagem|\\bgame\\b|animat|brand design|creative director|engineer|engenheir|developer|desenvolvedor|front.?end|back.?end|data scien|sales|vendas|recruit|recrut|counsel|juridic|accountant|contador",
+      "gupy": ["ux designer", "product designer", "designer de produto", "ux ui", "ui designer", "design de experiencia", "conversation designer", "ux writer", "design system", "designer de interacao", "content designer", "analista de ux", "service design", "ux research"],
+      "remotive": "design",
+      "wwr": "remote-design-jobs"
+    },
+    "produto": {
+      "rotulo": "Produto",
+      "titulosAlvo": [
+        { "re": "product manager|gerente de produto|product owner|\\bpo\\b|product lead|head of product|product ops|product operations", "pts": 50, "tema": "produto" },
+        { "re": "program manager|\\btpm\\b|technical program|gerente de programa|project manager|gerente de projetos", "pts": 38, "tema": "programa" },
+        { "re": "growth", "pts": 34, "tema": "growth" }
+      ],
+      "excluir": "designer|engineer|engenheir|developer|desenvolvedor|data scien|sales|vendas|recruit|recrut|counsel|juridic|accountant|contador|marketing manager|account manager|customer",
+      "gupy": ["product manager", "gerente de produto", "product owner", "program manager"],
+      "remotive": "product",
+      "wwr": "remote-product-jobs"
+    },
+    "dados": {
+      "rotulo": "Dados",
+      "titulosAlvo": [
+        { "re": "data engineer|engenheir[oa] de dados|analytics engineer", "pts": 50, "tema": "engenharia de dados" },
+        { "re": "data scien|cientista de dados|machine learning|\\bml\\b|ml engineer|ai engineer|engenheir[oa] de (ia|inteligencia artificial)|\\bllm\\b|mlops", "pts": 50, "tema": "ciencia de dados e IA" },
+        { "re": "data analyst|analista de dados|business analyst|analista de bi|\\bbi\\b|business intelligence|analytics", "pts": 44, "tema": "analise de dados" },
+        { "re": "database|\\bdba\\b|banco de dados", "pts": 34, "tema": "banco de dados" }
+      ],
+      "excluir": "designer|sales|vendas|recruit|recrut|counsel|juridic|accountant|contador|marketing|customer|support|suporte|software engineer|desenvolvedor|developer|front|back",
+      "gupy": ["engenheiro de dados", "cientista de dados", "analista de dados", "machine learning", "analytics engineer", "analista de bi"],
+      "remotive": "data",
+      "wwr": null
+    }
+  }
+}
