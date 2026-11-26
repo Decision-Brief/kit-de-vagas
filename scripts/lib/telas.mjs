@@ -106,7 +106,7 @@ export async function telaLista(n = 5) {
   const linhas = l.vagas.map((v, i) => {
     const rec = v.avaliacao ? ` [${v.avaliacao.recomendacao}]` : "";
     const dica = v.curto === melhor.curto ? "  ← a que eu começaria" : "";
-    return `${i + 1}  ${String(v.score).padStart(3)}  ${cortar(`${v.titulo} · ${v.empresa}`, 56)}${rec}${dica}`;
+    return `${i + 1}  ${String(v.score).padStart(3)}  ${cortar(`${v.titulo} · ${v.empresa}`, 56)}${rec}${dica}\n       ${v.url || "(sem link)"}`;
   });
   return {
     tela: "lista",
@@ -128,6 +128,7 @@ export async function telaAvaliacao(curto) {
   if (!a) throw new Error("Essa vaga ainda nao foi avaliada. Rode o leitor antes.");
   const linhas = [
     `${v.titulo} · ${v.empresa}`,
+    v.url || "(sem link)",
     `Aderência ${v.score} de 100 · ${v.local || "local não informado"}`,
     a.tem.length ? `Você tem: ${a.tem.join("; ")}` : "Você tem: nada confirmado que a vaga peça",
     a.falta.length ? `Pede e você não tem confirmado: ${a.falta.join("; ")}` : "Pede e você não tem confirmado: nada importante",
