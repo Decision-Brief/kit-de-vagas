@@ -99,7 +99,10 @@ export async function telaLista(n = 5) {
       opcoes: [op("menu", "Voltar ao menu", { recomendada: true }), op("colada", "Avaliar uma vaga que eu colei", { procedimento: "avaliar-colada" })],
     };
   }
-  const melhor = l.vagas.find((v) => v.avaliacao && v.avaliacao.recomendacao !== "pular") ?? l.vagas[0];
+  // Quem a IA recomendou vem primeiro; "pular" desce. Dentro de cada grupo, a nota manda.
+  const rank = (v) => (!v.avaliacao ? 1 : v.avaliacao.recomendacao === "aplicar" ? 0 : v.avaliacao.recomendacao === "aplicar com ressalva" ? 1 : 2);
+  l.vagas.sort((a, b) => rank(a) - rank(b) || b.score - a.score);
+  const melhor = l.vagas[0];
   const linhas = l.vagas.map((v, i) => {
     const rec = v.avaliacao ? ` [${v.avaliacao.recomendacao}]` : "";
     const dica = v.curto === melhor.curto ? "  ← a que eu começaria" : "";
@@ -109,9 +112,10 @@ export async function telaLista(n = 5) {
     tela: "lista",
     texto: [`Vagas de hoje · ${l.lidas} lidas, ${l.combinam} combinam com o seu perfil`, `As ${l.vagas.length} melhores, já lidas:`, "", ...linhas].join("\n"),
     melhor: melhor.curto,
+    itens: l.vagas.map((v, i) => ({ n: i + 1, curto: v.curto })),
     opcoes: [
-      op("ver-melhor", `Ver a vaga ${l.vagas.findIndex((v) => v.curto === melhor.curto) + 1} por dentro`, { recomendada: true, procedimento: "tela-avaliacao", curto: melhor.curto }),
-      op("pacote-melhor", `Gerar pacote da vaga ${l.vagas.findIndex((v) => v.curto === melhor.curto) + 1}`, { procedimento: "gerar-pacote", curto: melhor.curto }),
+      op("ver-melhor", `Ver a vaga 1 por dentro`, { recomendada: true, procedimento: "tela-avaliacao", curto: melhor.curto }),
+      op("pacote-melhor", "Gerar pacote da vaga 1", { procedimento: "gerar-pacote", curto: melhor.curto }),
       op("outra", "Escolher outra vaga da lista", { procedimento: "escolher-outra" }),
       op("menu", "Voltar ao menu"),
     ],

@@ -97,7 +97,7 @@ export function criarPontuador(config) {
     }
 
     const achadas = chaves.filter((r) => r.test(desc) || r.test(titulo)).length;
-    const kw = Math.min(20, achadas * 3);
+    const kw = Math.min(12, achadas * 2);
     if (kw) razoes.push(`${achadas} termos do seu perfil na vaga (+${kw})`);
     score += kw;
 

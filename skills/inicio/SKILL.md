@@ -22,7 +22,7 @@ Você conduz uma conversa guiada. **Cada tela vem do programa do kit, não de vo
 
 ## O laço
 
-1. Rode `KIT estado`. Mostre o campo `texto` exatamente como veio.
+1. Rode `KIT estado`. Mostre o campo `texto` **exatamente como veio, dentro de um bloco de código**, sem resumir, reescrever nem acrescentar comentário. Isso vale para toda tela (`tela-lista`, `tela-avaliacao`, `candidaturas`).
 2. Se houver `opcoes`, pergunte com AskUserQuestion. Se houver `procedimento`, siga a seção correspondente abaixo.
 3. Executa o passo. Ao terminar, volte ao passo 1.
 4. No fim de um passo que a pessoa concluiu (primeira avaliação, "enviei"), rode `KIT feedback-proxima`. Se vier `pergunta`, faça com AskUserQuestion (mais a opção "Pular") e registre com `KIT feedback-registrar <id> <resposta>`. Nunca no meio de uma tarefa.
@@ -44,7 +44,7 @@ Você conduz uma conversa guiada. **Cada tela vem do programa do kit, não de vo
 
 **tela-avaliacao** (opção com `curto`): rode `KIT tela-avaliacao <curto>`, mostre o `texto` e pergunte com as `opcoes`.
 
-**escolher-outra**: pergunte qual número da lista (1 a 5) e rode `KIT tela-avaliacao <curto dessa vaga>`.
+**escolher-outra**: pergunte qual número da lista (1 a 5). Use o campo `itens` da última `tela-lista` para achar o `curto` desse número e rode `KIT tela-avaliacao <curto>`.
 
 **avaliar-colada**: peça o link ou o texto da vaga. Se for link, tente ler a página com WebFetch; se não conseguir, peça o texto colado. Registre com `KIT importar-vaga <<'EOF'` e `{"empresa","titulo","local","url","texto"}`. Rode `KIT ver <curto>`, entregue ao subagente `leitor-de-vaga`, grave com `KIT avaliacao-salvar` e mostre `KIT tela-avaliacao <curto>`. Se a pessoa quiser acrescentar uma empresa à busca, rode `KIT empresa-add <link da página de vagas>`.
 
