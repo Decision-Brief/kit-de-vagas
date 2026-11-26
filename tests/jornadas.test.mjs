@@ -232,6 +232,23 @@ test("JORNADA 3 · lista vazia, 'ver mais' e 'já me candidatei'", () => {
   assert.ok(!depois.itens.some((i) => i.curto === primeira.itens[0].curto), "vaga ja enviada nao volta nas listas");
 });
 
+test("LEITOR · tolera JSON cercado de texto, e o roteiro manda nao travar quando o leitor falha", () => {
+  const c = novaCasa();
+  const { k } = c;
+  k("config-set", "areas", "desenvolvimento");
+  const [v] = semearVagas(c, 1);
+  const cercado = "Aqui esta a avaliacao:\n```json\n" + AVAL("aplicar") + "\n```\nEspero que ajude.";
+  const r = k("avaliacao-salvar", v.curto, { stdin: cercado });
+  assert.ok(r.ok, r.bruto);
+  assert.equal(r.dado.recomendacao, "aplicar");
+  assert.equal(k("avaliacao-salvar", v.curto, { stdin: "sem json nenhum" }).ok, false);
+  assert.match(SKILL, /não pergunte nada à pessoa/);
+  assert.match(SKILL, /A comparação nunca pode ficar parada/);
+  const agente = readFileSync(join(RAIZ, "agents/leitor-de-vaga.md"), "utf8");
+  assert.match(agente, /^model: sonnet$/m, "o leitor nao herda o modelo menor da sessao");
+  assert.match(agente, /Nunca termine sem ele/);
+});
+
 test("RANK · a numeracao de uma comparacao antiga nao vaza para a lista nova", () => {
   const c = novaCasa();
   const { k } = c;

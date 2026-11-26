@@ -39,6 +39,16 @@ async function lerJsonStdin() {
   try {
     return JSON.parse(s);
   } catch {
+    // Modelos menores as vezes cercam o JSON de texto ou de ```json: pega do primeiro "{" (ou "[") ao ultimo fecho.
+    const ini = s.search(/[\[{]/);
+    const fim = Math.max(s.lastIndexOf("}"), s.lastIndexOf("]"));
+    if (ini >= 0 && fim > ini) {
+      try {
+        return JSON.parse(s.slice(ini, fim + 1));
+      } catch {
+        // cai no erro abaixo
+      }
+    }
     throw new Error("O JSON da entrada esta invalido.");
   }
 }
