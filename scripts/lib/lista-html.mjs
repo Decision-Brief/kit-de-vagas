@@ -42,10 +42,26 @@ h1{font:600 28px/1.2 Georgia,"Times New Roman",serif;margin:0}
 .chip{font:700 12px/1 system-ui,sans-serif;border-radius:4px;padding:4px 7px;background:var(--wash);color:var(--deep)}
 .chip.nota{background:var(--teal);color:var(--paper)}
 .chip.warn{background:var(--amberw);color:var(--amber)}
-.go{grid-column:2;grid-row:1/span 4;background:var(--teal);color:var(--paper);text-decoration:none;font:700 14px/1 system-ui,sans-serif;padding:12px 14px;border-radius:8px;white-space:nowrap}
+.go{grid-column:2;grid-row:1/span 4;background:var(--teal);color:var(--paper);text-decoration:none;font:700 14px/1.2 system-ui,sans-serif;padding:14px 16px;min-height:44px;display:inline-flex;align-items:center;border-radius:8px;white-space:nowrap}
 .go:hover{background:var(--deep)}
 .go:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 .rec{font-size:14px;margin:0;grid-column:1}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-top:16px}
+.card h2{font:600 18px/1.3 Georgia,"Times New Roman",serif;margin:0 0 6px}
+.card p{margin:6px 0 0;font-size:15px}
+.produto{background:var(--wash);border-color:transparent}
+.go2{display:inline-flex;align-items:center;min-height:44px;margin-top:12px;padding:0 16px;border:2px solid var(--teal);border-radius:8px;color:var(--deep);font:700 14px/1.2 system-ui,sans-serif;text-decoration:none}
+.go2:hover{background:var(--paper)}
+.go2:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+details.termos{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:0 18px;margin-top:16px}
+details.termos summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font:700 15px/1.3 system-ui,sans-serif}
+details.termos summary:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+details.termos ul{margin:0 0 12px;padding-left:20px;font-size:14px}
+details.termos li{margin:6px 0}
+details.termos a,.card a:not(.go2),footer a{color:var(--deep)}
+details.termos li a{display:inline-flex;align-items:center;min-height:24px}
+@media (max-width:560px){details.termos li a{min-height:44px}}
 footer{color:var(--soft);font-size:13px;margin-top:20px}
 @media (max-width:560px){.job{grid-template-columns:1fr}.go{grid-column:1;grid-row:auto;text-align:center}}
 `;
@@ -67,7 +83,7 @@ export function htmlLista({ vagas, lidas, combinam, comPerfil, data }) {
   <h2>${i + 1}. ${escHtml(v.titulo)}</h2>
   <div class="sub">${escHtml(v.empresa)} · ${escHtml(v.local || "local não informado")} · ${velha ? "" : escHtml(textoIdade(dias))}${velha ? escHtml(textoIdade(dias)) : ""}</div>
   <div class="chips">${chips}</div>${rec}
-  ${link ? `<a class="go" href="${escHtml(link)}" target="_blank" rel="noopener noreferrer">Abrir vaga ↗</a>` : `<span class="sub">sem link</span>`}
+  ${link ? `<a class="go" href="${escHtml(link)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir vaga ${i + 1}: ${escHtml(v.titulo)}, ${escHtml(v.empresa)} (abre em outra aba)">Abrir vaga ↗</a>` : `<span class="sub">sem link</span>`}
 </li>`;
   }).join("\n");
   return `<!doctype html>
@@ -78,6 +94,27 @@ export function htmlLista({ vagas, lidas, combinam, comPerfil, data }) {
 <ol class="jobs">
 ${cards}
 </ol>
+<section class="card" aria-labelledby="quem-t">
+<h2 id="quem-t">Quem faz este kit</h2>
+<p>Feito por Felipe Ribeiro, designer de produto e fundador do Decision Brief. O kit lê páginas públicas de vagas e organiza a sua busca, tudo no seu computador. <strong>Quem se candidata é você:</strong> o kit nunca envia nada por você nem entra nas suas contas.</p>
+</section>
+<section class="card produto" aria-labelledby="prod-t">
+<h2 id="prod-t">Conheça o Decision Brief</h2>
+<p>Decisões importantes costumam ficar espalhadas em conversas e planilhas. O Decision Brief registra uma decisão por documento: a posição antes da evidência, de onde vem cada dado, o que falta, quem responde e quando revisar. Serve para decisões de equipe e também para as pessoais difíceis, como escolher entre duas ofertas de emprego.</p>
+<a class="go2" href="https://decision-brief.com/?origem=kit" target="_blank" rel="noopener noreferrer">Conhecer o Decision Brief<span class="sr"> (abre em outra aba)</span> ↗</a>
+</section>
+<details class="termos">
+<summary>Termos de uso do kit</summary>
+<ul>
+<li>Uso pessoal e não comercial, sob a licença PolyForm Noncommercial 1.0.0.</li>
+<li>Fornecido como está, sem garantia de resultado, de que a vaga ainda esteja aberta ou de contratação. Confira cada vaga na página da empresa.</li>
+<li>Você revisa tudo e envia por conta própria. O kit não envia nada, não entra em contas e só escreve no currículo o que você confirmou.</li>
+<li>Seus dados ficam no seu computador. O Decision Brief não recebe o seu currículo, as vagas nem o seu nome.</li>
+<li>As vagas vêm de páginas públicas de terceiros. Cada site tem os próprios termos e você é responsável por usá-los de acordo com eles. A Gupy restringe a cópia automatizada de vagas.</li>
+<li>A IA usada é a do seu Claude e conta no seu plano. O kit não tem relação com as empresas citadas.</li>
+<li>Dúvidas: contato@decision-brief.com. <a href="https://github.com/Decision-Brief/kit-de-vagas/blob/main/TERMOS.md" target="_blank" rel="noopener noreferrer">Termos completos<span class="sr"> (abre em outra aba)</span></a>.</li>
+</ul>
+</details>
 <footer>Gerada no seu computador pelo Kit de Vagas. Volte ao Claude Code para comparar ou montar o currículo. Se mudou algo lá, recarregue esta página.</footer>
 </main></body></html>
 `;
