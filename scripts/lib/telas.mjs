@@ -53,14 +53,15 @@ export async function estado() {
   }
 
   const temCv = r.confirmados + r.pendentes > 0;
+  const acabouDeEnviar = config.ultimoEnvio && Date.now() - new Date(config.ultimoEnvio).getTime() < 30 * 60 * 1000;
   return {
     tela: "menu",
     texto: `Kit de Vagas · ${temCv ? "com currículo" : "sem currículo"} · ${cands.total} candidatura${cands.total === 1 ? "" : "s"}\nO que você quer fazer agora?`,
     opcoes: [
-      op("vagas", "Ver as vagas de hoje", { recomendada: true, procedimento: "vagas-de-hoje" }),
+      op("vagas", "Ver as vagas de hoje", { recomendada: !acabouDeEnviar, procedimento: "vagas-de-hoje" }),
       op("colada", "Avaliar uma vaga que eu colei", { procedimento: "avaliar-colada" }),
       temCv ? op("perfil", "Ver ou ajustar meu perfil", { procedimento: "ver-perfil" }) : op("perfil", "Colar meu currículo", { procedimento: "cv-primeiro" }),
-      op("candidaturas", "Ver minhas candidaturas", { procedimento: "ver-candidaturas" }),
+      op("candidaturas", "Ver minhas candidaturas", { recomendada: Boolean(acabouDeEnviar), procedimento: "ver-candidaturas" }),
     ],
   };
 }
@@ -252,7 +253,7 @@ export async function telaFatosLote() {
 
 export async function telaCandidaturas() {
   const c = await candidaturas();
-  if (!c.total) return { tela: "candidaturas", texto: "Nenhuma candidatura ainda. Quando você enviar uma, volte e diga \"enviei\".", opcoes: [op("menu", "Voltar ao menu", { recomendada: true })] };
+  if (!c.total) return { tela: "candidaturas", texto: "Nenhuma candidatura ainda. Quando você enviar uma, volte e diga \"enviei\".", opcoes: [op("menu", "Voltar ao menu", { recomendada: true }), op("sair", "Por hoje é só", { procedimento: "sair" })] };
   const linhas = c.lista.slice(0, 8).map((x) => `${x.status.padEnd(12)} ${cortar(`${x.titulo} · ${x.empresa}`, 52)}${x.parada ? `  (${x.diasSemNovidade} dias sem novidade)` : ""}`);
   return {
     tela: "candidaturas",
@@ -260,6 +261,7 @@ export async function telaCandidaturas() {
     opcoes: [
       ...(c.paradas.length ? [op("atualizar", `Atualizar as ${c.paradas.length} paradas`, { recomendada: true, procedimento: "atualizar-candidaturas" })] : []),
       op("menu", "Voltar ao menu", { recomendada: !c.paradas.length }),
+      op("sair", "Por hoje é só", { procedimento: "sair" }),
     ],
   };
 }

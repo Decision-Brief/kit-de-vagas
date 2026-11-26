@@ -192,6 +192,17 @@ test("ler-pdf: recusa o que nao e PDF e o que nao existe", async () => {
   await assert.rejects(() => lerPdf("/tmp/curriculo.txt"), /nao e um PDF/);
 });
 
+test("toda tela com opcoes tem ao menos 2 (a caixa de escolha exige)", async () => {
+  const fresco = mkdtempSync(join(tmpdir(), "kit-vagas-opc-"));
+  const r = spawnSync("node", ["--input-type=module", "-e", `
+    process.env.KIT_VAGAS_HOME = ${JSON.stringify(fresco)};
+    const { telaCandidaturas, telaSoOlhar } = await import(${JSON.stringify(join(RAIZ, "scripts/lib/telas.mjs"))});
+    console.log(JSON.stringify([(await telaCandidaturas()).opcoes.length, (await telaSoOlhar()).opcoes.length]));
+  `], { encoding: "utf8" });
+  assert.equal(r.status, 0, r.stderr);
+  assert.ok(JSON.parse(r.stdout).every((n) => n >= 2));
+});
+
 test("gancho: nega tudo dentro do leitor de vaga e nao opina fora dele", () => {
   const roda = (entrada) => spawnSync("node", [join(RAIZ, "scripts/guard.mjs")], { input: JSON.stringify(entrada), encoding: "utf8" });
   const dentro = roda({ tool_name: "Bash", agent_type: "vagas:leitor-de-vaga" });

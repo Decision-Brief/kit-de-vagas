@@ -251,6 +251,11 @@ export async function marcar(curto, status, nota = "") {
   if (status === "enviado" && !v.enviadoEm) v.enviadoEm = hoje();
   if (nota) v.notas = nota;
   await salvarVagas(estado);
+  if (status === "enviado") {
+    const config = await carregarConfig();
+    config.ultimoEnvio = new Date().toISOString();
+    await salvarConfig(config);
+  }
   return { curto: v.curto, empresa: v.empresa, titulo: v.titulo, status };
 }
 
