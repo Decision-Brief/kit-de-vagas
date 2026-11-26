@@ -9,6 +9,9 @@ import {
   acharPorLink, adicionarEmpresa, candidaturas, coletar, importarColada, listar, marcar, salvarAvaliacao, textoParaLeitor,
 } from "./lib/vagas.mjs";
 import { gerarPacote } from "./lib/cv.mjs";
+import {
+  acompanhar, gupyPerfilResponder, marcarVarias, orientarGupy, telaGupyBloco, telaGupyFim, telaMostradasQuais, validarTexto,
+} from "./lib/acompanhar.mjs";
 import { lerPdf } from "./lib/pdf.mjs";
 import {
   abrirLista, estado, feedbackProxima, feedbackRegistrar, telaCandidaturas, telaComparar, telaEntendi, telaFatosLote, telaSoOlhar, telaVaga,
@@ -182,6 +185,31 @@ const COMANDOS = {
   },
   async marcar() {
     saida(await marcar(args[0], args[1], args.slice(2).join(" ")));
+  },
+  async "marcar-varias"() {
+    const [status, ...curtos] = args;
+    saida(await marcarVarias(status, curtos, "enviada por fora do kit"));
+  },
+  async "mostradas-quais"() {
+    saida(await telaMostradasQuais());
+  },
+  async "gupy-perfil"() {
+    saida(await gupyPerfilResponder(args[0]));
+  },
+  async "orientar-gupy"() {
+    saida(await orientarGupy(args[0] ?? null));
+  },
+  async "tela-gupy-bloco"() {
+    saida(await telaGupyBloco(args[0], args[1] ?? null));
+  },
+  async "tela-gupy-fim"() {
+    saida(await telaGupyFim(args[0]));
+  },
+  async "texto-validar"() {
+    saida(await validarTexto(await lerJsonStdin()));
+  },
+  async acompanhar() {
+    saida(await acompanhar(args[0]));
   },
   async candidaturas() {
     saida(await telaCandidaturas());

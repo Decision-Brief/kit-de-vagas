@@ -5,6 +5,7 @@ import { CASA, acharPorCurto, carregarConfig, carregarPerfil, carregarVagas, dia
 import { AREAS } from "./pontuar.mjs";
 import { resumoPerfil } from "./perfil.mjs";
 import { DIAS_PARADA, candidaturas, compararVagas, limparRanks, listar, marcarMostradas, vagasPorCurto } from "./vagas.mjs";
+import { telaGupyPerfil, telaMostradas, telaRevisao } from "./acompanhar.mjs";
 import { DIAS_AVISO, abrir, escreverCandidaturas, escreverLista, idadeDias, textoIdade } from "./lista-html.mjs";
 
 export const REPO_URL = "https://github.com/Decision-Brief/kit-de-vagas";
@@ -40,6 +41,10 @@ export async function estado() {
   }
 
   const primeiraDoDia = config.ultimaVez !== hoje();
+  if (primeiraDoDia) {
+    const m = await telaMostradas();
+    if (m) return m;
+  }
   if (primeiraDoDia && (cands.paradas.length || (dias !== null && dias >= 14))) {
     const k = cands.paradas.length;
     return {
@@ -53,6 +58,10 @@ export async function estado() {
   }
 
   const temCv = r.confirmados + r.pendentes > 0;
+  if (primeiraDoDia) {
+    const rev = await telaRevisao(config, r.confirmados > 0);
+    if (rev) return rev;
+  }
   const acabouDeEnviar = config.ultimoEnvio && Date.now() - new Date(config.ultimoEnvio).getTime() < 30 * 60 * 1000;
   return {
     tela: "menu",
@@ -156,6 +165,7 @@ export async function telaSoOlhar() {
 }
 
 export async function telaVaga(curto) {
+  const config = await carregarConfig();
   const estado = await carregarVagas();
   const perfil = await carregarPerfil();
   const v = acharPorCurto(estado, curto);
@@ -169,6 +179,10 @@ export async function telaVaga(curto) {
     `${v.local || "local não informado"} · ${textoIdade(dias)}${velha ? ". Confira se ainda está aberta." : ""}`,
     ...(v.flags?.length ? [`Atenção: ${v.flags.join("; ")}`] : []),
   ];
+  const confirmados = perfil.fatos.some((f) => f.confirmado && !f.rejeitado);
+  const gupy = v.fonte === "gupy";
+  const acomp = config.acompanhamento ?? {};
+  if (gupy && confirmados && !acomp.gupyPerfil) return telaGupyPerfil(v);
   const a = v.avaliacao;
   if (a) {
     const pular = a.recomendacao === "pular";
@@ -181,7 +195,8 @@ export async function telaVaga(curto) {
         `Recomendação: ${a.recomendacao}. ${a.motivo}`,
       ].join("\n"),
       opcoes: [
-        op("pacote", "Montar currículo e carta para esta vaga", { recomendada: !pular, procedimento: "gerar-pacote", curto: v.curto }),
+        ...(gupy && confirmados ? [op("gupy", "Atualizar meu perfil na Gupy", { procedimento: "orientar-gupy", curto: v.curto })] : []),
+        op("pacote", gupy && confirmados ? "Só o texto de apresentação desta vaga" : "Montar currículo e carta para esta vaga", { recomendada: !pular, procedimento: "gerar-pacote", curto: v.curto }),
         op("ja", "Já me candidatei a esta", { procedimento: "ja-candidatei", curto: v.curto }),
         op("outra", "Ver outra vaga", { recomendada: pular, procedimento: "escolher-vaga" }),
       ],

@@ -36,11 +36,12 @@ export const CONFIG_PADRAO = {
   fontes: { ats: true, remotas: true, gupy: true },
   ultimaColeta: null,
   feedback: { optin: null, id: null, perguntadas: {} },
+  acompanhamento: { gupyPerfil: null, ultimaRevisao: null, contratada: false, parar: false },
 };
 
 export async function carregarConfig() {
   const c = await lerJson("config.json", CONFIG_PADRAO);
-  return { ...structuredClone(CONFIG_PADRAO), ...c, fontes: { ...CONFIG_PADRAO.fontes, ...c.fontes }, feedback: { ...CONFIG_PADRAO.feedback, ...c.feedback } };
+  return { ...structuredClone(CONFIG_PADRAO), ...c, fontes: { ...CONFIG_PADRAO.fontes, ...c.fontes }, feedback: { ...CONFIG_PADRAO.feedback, ...c.feedback }, acompanhamento: { ...CONFIG_PADRAO.acompanhamento, ...c.acompanhamento } };
 }
 
 export async function salvarConfig(c) {

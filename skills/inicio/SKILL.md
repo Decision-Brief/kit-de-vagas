@@ -25,7 +25,7 @@ Você conduz uma conversa guiada. **Cada tela vem do programa do kit, não de vo
 ## O laço
 
 1. Rode `KIT estado` e mostre o `texto`.
-2. Se houver `opcoes`, pergunte com AskUserQuestion e siga o `procedimento` (ou rode o `comando`) da opção escolhida. Se não houver, siga o `procedimento` da tela.
+2. Se houver `opcoes`, pergunte com AskUserQuestion. Da opção escolhida, rode primeiro o `comando` (se houver, com `KIT` na frente) e depois siga o `procedimento`. Se não houver, siga o `procedimento` da tela.
 3. Ao terminar, volte ao passo 1.
 4. Depois que a pessoa disser "enviei", rode `KIT feedback-proxima`. Se vier `pergunta`, faça **uma só** por conversa, com as 3 opções, e registre com `KIT feedback-registrar <id> <resposta>`. Nunca no lugar de uma tela. Se vier `depois`, diga essa frase.
 
@@ -70,7 +70,7 @@ Depois rode `KIT tela-entendi` e siga o laço. Se a opção tinha `depois`, **n�
 
 **corrigir-um**: pergunte o código do fato (f1, f2…) e o texto certo, em texto livre. Rode `KIT fato-corrigir <id> <texto>`. Se a pessoa disser que o fato está errado e não quer corrigir, rode `KIT fato-rejeitar <id>`.
 
-**enviei**: rode `KIT marcar <curto> enviado`, diga "Marquei como enviada. Vou lembrar de conferir daqui a 10 dias." e siga o passo 4 do laço.
+**enviei**: rode `KIT marcar <curto> enviado`, diga "Marquei como enviada. Vou perguntar se teve resposta daqui a 7 dias." e siga o passo 4 do laço.
 
 **avaliar-colada**: peça o link ou o texto da vaga. Se for link, **primeiro** rode `KIT achar-vaga <link>`: se `achou`, siga **tela-vaga** com o `curto` (a vaga já foi lida pelo kit). Se não achou, tente ler a página com WebFetch; se não conseguir, peça o texto colado. Registre com `KIT importar-vaga <<'EOF'` e `{"empresa","titulo","local","url","texto"}`. Siga **tela-vaga** com o `curto` devolvido. Se a pessoa quiser acrescentar uma empresa à busca, rode `KIT empresa-add <link da página de vagas>`.
 
@@ -78,7 +78,21 @@ Depois rode `KIT tela-entendi` e siga o laço. Se a opção tinha `depois`, **n�
 
 **ver-candidaturas**: rode `KIT candidaturas`, mostre o `texto` e pergunte com as `opcoes`.
 
-**atualizar-candidaturas**: rode `KIT paradas`. Para cada uma, pergunte "Alguma novidade em <empresa>?" com: Sem resposta ainda, Respondeu, Rejeitada. Grave com `KIT marcar <curto> enviado "sem resposta"`, `KIT marcar <curto> respondeu` ou `KIT marcar <curto> rejeitado`.
+**atualizar-candidaturas**: rode `KIT paradas`. Para cada uma, pergunte "Teve resposta de <empresa>?" com: Ainda não, Me chamaram, Recusaram, Fui contratada. Grave com `KIT marcar <curto> enviado "sem resposta"` (depois de 2 vezes o kit para de perguntar), `KIT marcar <curto> respondeu`, `KIT marcar <curto> rejeitado` ou `KIT marcar <curto> aceito`. Se escolheu "Fui contratada", rode também `KIT acompanhar contratada` e diga parabéns em uma frase.
+
+**menu-depois**: não faça nada especial. Volte ao laço (passo 1). A tela que acabou de aparecer não volta a aparecer hoje.
+
+**marcar-mostradas**: rode `KIT mostradas-quais`, mostre o `texto` e pergunte com as `opcoes`. Se a pessoa digitar números em "Outro" (por exemplo "1 e 3"), pegue o `curto` de cada número em `itens` e rode `KIT marcar-varias enviado <curto> <curto>`. Diga "Marquei N como enviadas." e volte ao laço.
+
+**marcar-todas-mostradas**: rode `KIT mostradas-quais`, pegue todos os `curto` de `itens` e rode `KIT marcar-varias enviado <curtos>`. Diga "Marquei N como enviadas." e volte ao laço.
+
+**nenhuma-mostrada**: rode `KIT mostradas-quais`, pegue todos os `curto` e rode `KIT marcar-varias ignorado <curtos>` (elas deixam de ser perguntadas). Siga **vagas-de-hoje**.
+
+**orientar-gupy** (opção com `curto`): diga que a Gupy lê o perfil e que você vai entregar um bloco por vez para copiar, e que não entra na conta dela. Rode `KIT orientar-gupy <curto>`. Se vier erro de falta de fatos, faça **gerar-pacote** passo 1. Depois rode `KIT tela-gupy-bloco 1 <curto>`. **Mostre o campo `bloco` em um bloco de código** e depois a `pergunta` com as opções. Siga **gupy-proximo**.
+
+**gupy-proximo** (opção com `proximo` e `curto` na tela anterior): se `proximo` for um número, rode `KIT tela-gupy-bloco <número> <curto>`, mostre o `bloco` em um bloco de código e pergunte. Se for `apresente`, escreva 3 linhas de "Apresente-se" para esta vaga, só com fatos confirmados, e valide com `KIT texto-validar <<'EOF'` com `{"texto":"..."}` e `EOF`; se `ok` for falso, corrija pelo que `erros` disser. Mostre o texto em um bloco de código, peça para copiar e rode `KIT tela-gupy-fim <curto>`. Mostre e pergunte.
+
+**revisao-mensal**: pergunte "Desde a última revisão, houve algo novo?" com: Um projeto ou resultado novo, Mudou meu portfólio ou meu LinkedIn, Nada mudou. Se projeto novo: peça o que aconteceu e o número, em texto, grave com `KIT fato-propor` e confirme com `KIT fato-confirmar <id>` só depois que a pessoa disser que está certo. Se mudou portfólio ou LinkedIn: peça o link e rode `KIT contato-link <campo> <url>`. Depois rode `KIT acompanhar revisao-feita`, diga "Pronto. Volto a perguntar em 30 dias." e volte ao laço.
 
 ## Decision Brief
 

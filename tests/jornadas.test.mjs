@@ -387,7 +387,7 @@ test("TEMPO · candidaturas paradas e volta depois de semanas", () => {
   const t = k("estado").dado;
   conferirTela("voltando", t);
   assert.equal(t.tela, "voltando");
-  assert.match(t.texto, /1 candidatura parada há mais de 10 dias/);
+  assert.match(t.texto, /1 candidatura parada há mais de 7 dias/);
   assert.equal(t.opcoes[0].procedimento, "atualizar-candidaturas");
   assert.equal(k("paradas").dado.length, 1);
   assert.equal(k("estado").dado.tela, "menu", "o aviso aparece uma vez por dia");
@@ -550,4 +550,161 @@ test("REDE · coleta real (só com KIT_TESTE_REDE=1)", { timeout: 240000 }, asyn
   const l = c.k("abrir-lista").dado;
   assert.equal(l.itens.length, 5);
   assert.ok(l.itens.every((i) => i.curto));
+});
+
+// ---------- 0.4.0: acompanhamento, perfil da Gupy e revisao mensal ----------
+const comPerfilConfirmado = (c) => {
+  c.k("config-set", "areas", "design");
+  c.k("contato", { stdin: JSON.stringify(CONTATO) });
+  c.k("contato-confirmar");
+  c.k("fato-propor", { stdin: JSON.stringify(FATOS) });
+  c.k("fatos-confirmar-todos");
+};
+const naManha = (c, diasAtras = 1) => { const cfg = c.lerJson("config.json"); cfg.ultimaVez = dia(diasAtras); c.gravar("config.json", cfg); };
+
+test("AO VOLTAR · pergunta pelas vagas mostradas e nao marcadas, uma vez por dia", () => {
+  const c = novaCasa();
+  c.k("config-set", "areas", "design");
+  const vagas = semearVagas(c, 4, (i) => (i <= 3 ? { mostradaEm: dia(2) } : { mostradaEm: dia(0) }));
+  naManha(c);
+  const t = c.k("estado").dado;
+  conferirTela("mostradas", t);
+  assert.equal(t.tela, "mostradas");
+  assert.match(t.texto, /Faz 2 dias que mostrei 3 vagas/);
+  assert.deepEqual(t.opcoes.map((o) => o.procedimento), ["marcar-mostradas", "nenhuma-mostrada", "menu-depois"]);
+  assert.equal(c.k("estado").dado.tela, "menu", "uma vez por dia");
+
+  const q = c.k("mostradas-quais").dado;
+  conferirTela("mostradas-quais", q);
+  assert.equal(q.itens.length, 3, "a vaga mostrada hoje ainda nao entra");
+  const [a, b, d] = q.itens.map((x) => x.curto);
+  const r = c.k("marcar-varias", "enviado", a, d).dado;
+  assert.equal(r.marcadas, 2);
+  const est = c.lerJson("vagas.json").vagas;
+  const porCurto = (cu) => Object.values(est).find((v) => v.curto === cu);
+  assert.equal(porCurto(a).status, "enviado");
+  assert.equal(porCurto(b).status, "novo");
+  assert.equal(porCurto(d).enviadoEm, dia(0));
+  assert.equal(Object.values(c.lerJson("vagas.json").vagas).filter((v) => v.status === "enviado").length, 2);
+  assert.equal(c.k("mostradas-quais").dado.itens.length, 1, "o que foi marcado nao e perguntado de novo");
+  assert.equal(c.k("marcar-varias", "enviado", "zzzzzzz").ok, false, "codigo inexistente e recusado");
+  assert.ok(vagas.length === 4);
+
+  const n = novaCasa(); n.k("config-set", "areas", "design");
+  semearVagas(n, 2, () => ({ mostradaEm: dia(30) })); naManha(n);
+  assert.equal(n.k("estado").dado.tela, "menu", "vaga mostrada ha mais de 14 dias nao e cobrada");
+});
+
+test("AO VOLTAR · depois de 7 dias pergunta pela resposta, no maximo 2 vezes", () => {
+  const c = novaCasa();
+  c.k("config-set", "areas", "design");
+  semearVagas(c, 1, () => ({ status: "enviado", enviadoEm: dia(8), historico: [{ em: dia(8), status: "enviado" }] }));
+  naManha(c);
+  const t = c.k("estado").dado;
+  assert.equal(t.tela, "voltando");
+  assert.match(t.texto, /mais de 7 dias/);
+  const curto = c.k("paradas").dado[0].curto;
+  c.k("marcar", curto, "enviado", "sem resposta");
+  assert.equal(c.lerJson("vagas.json").vagas["fx:1"].semRespostaVezes, 1);
+  const v = c.lerJson("vagas.json"); v.vagas["fx:1"].historico = [{ em: dia(8), status: "enviado" }]; c.gravar("vagas.json", v);
+  assert.equal(c.k("paradas").dado.length, 1, "1 vez sem resposta: pergunta de novo");
+  c.k("marcar", curto, "enviado", "sem resposta");
+  const v2 = c.lerJson("vagas.json"); v2.vagas["fx:1"].historico = [{ em: dia(8), status: "enviado" }]; c.gravar("vagas.json", v2);
+  assert.equal(c.k("paradas").dado.length, 0, "2 vezes sem resposta: para de perguntar");
+  assert.ok(c.k("marcar", curto, "aceito").ok, "contratada fica registrada como aceito");
+});
+
+test("GUPY · pergunta uma vez, orienta o perfil em blocos e so usa fatos confirmados", () => {
+  const c = novaCasa();
+  comPerfilConfirmado(c);
+  semearVagas(c, 2, (i) => ({ fonte: "gupy", id: `gupy:Vivo:${i}`, url: `https://vivo.gupy.io/job/${i}` }));
+  const curto = Object.values(c.lerJson("vagas.json").vagas)[0].curto;
+  const t = c.k("tela-vaga", curto).dado;
+  conferirTela("gupy-perfil", t);
+  assert.equal(t.tela, "gupy-perfil");
+  assert.equal(t.opcoes[0].procedimento, "orientar-gupy");
+
+  const o = c.k("orientar-gupy", curto).dado;
+  assert.ok(o.total >= 3, "experiencias + habilidades + formacao");
+  const b1 = c.k("tela-gupy-bloco", "1", curto).dado;
+  conferirTela("gupy-bloco", b1);
+  assert.match(b1.bloco, /Empresa: Banco X/);
+  assert.match(b1.bloco, /Meu emprego atual: marcado/);
+  assert.match(b1.bloco, /Início: Janeiro \/ 2022/);
+  assert.match(b1.bloco, /800 ms para 310 ms/);
+  const b2 = c.k("tela-gupy-bloco", "2", curto).dado;
+  assert.match(b2.bloco, /Empresa: Fintech Y/);
+  assert.match(b2.bloco, /Início: Março \/ 2019/);
+  assert.match(b2.bloco, /Fim: Dezembro \/ 2021/);
+  assert.match(b2.bloco, /Meu emprego atual: desmarcado/);
+  const ultimo = c.k("tela-gupy-bloco", String(o.total), curto).dado;
+  assert.equal(ultimo.opcoes[0].proximo, "apresente");
+  assert.equal(c.k("tela-gupy-bloco", "99", curto).ok, false);
+  const hab = [1, 2, 3, 4, 5, 6].map((n) => c.k("tela-gupy-bloco", String(n), curto)).find((r) => r.dado.bloco && /Habilidades|Digite uma de cada vez/.test(r.dado.bloco));
+  assert.ok(hab, "bloco de habilidades");
+
+  const v = c.k("tela-vaga", curto).dado;
+  assert.notEqual(v.tela, "gupy-perfil", "so pergunta uma vez");
+  const outra = Object.values(c.lerJson("vagas.json").vagas)[1].curto;
+  assert.notEqual(c.k("tela-vaga", outra).dado.tela, "gupy-perfil", "vale para as outras vagas da Gupy");
+
+  assert.equal(c.k("texto-validar", { stdin: JSON.stringify({ texto: "Reduzi o tempo de resposta de 800 ms para 310 ms." }) }).dado.ok, true);
+  const ruim = c.k("texto-validar", { stdin: JSON.stringify({ texto: "Aumentei a receita em 47%." }) }).dado;
+  assert.equal(ruim.ok, false);
+  assert.match(ruim.erros.join(" "), /47/);
+  const longo = c.k("texto-validar", { stdin: JSON.stringify({ texto: "a".repeat(700) }) }).dado;
+  assert.equal(longo.ok, false);
+  const fim = c.k("tela-gupy-fim", curto).dado;
+  conferirTela("gupy-fim", fim);
+  assert.equal(fim.opcoes[0].procedimento, "enviei");
+
+  const sem = novaCasa(); sem.k("config-set", "areas", "design");
+  semearVagas(sem, 1, () => ({ fonte: "gupy", id: "gupy:V:1" }));
+  const s1 = sem.k("tela-vaga", Object.values(sem.lerJson("vagas.json").vagas)[0].curto).dado;
+  assert.notEqual(s1.tela, "gupy-perfil", "sem fatos confirmados nao ha o que orientar");
+  assert.equal(sem.k("orientar-gupy").ok, false);
+
+  const ja = novaCasa(); comPerfilConfirmado(ja);
+  semearVagas(ja, 1, () => ({ fonte: "gupy", id: "gupy:V:1" }));
+  const cj = Object.values(ja.lerJson("vagas.json").vagas)[0].curto;
+  ja.k("gupy-perfil", "atualizado");
+  const vj = ja.k("tela-vaga", cj).dado;
+  conferirTela("gupy ja atualizado", vj);
+  assert.notEqual(vj.tela, "gupy-perfil");
+  assert.equal(ja.k("gupy-perfil", "qualquer").ok, false);
+});
+
+test("REVISAO · a cada 30 dias, ate a pessoa ser contratada", () => {
+  const c = novaCasa();
+  comPerfilConfirmado(c);
+  const cfg = c.lerJson("config.json"); cfg.criadoEm = dia(35); c.gravar("config.json", cfg);
+  naManha(c);
+  const t = c.k("estado").dado;
+  conferirTela("revisao", t);
+  assert.equal(t.tela, "revisao");
+  assert.deepEqual(t.opcoes.map((o) => o.procedimento), ["revisao-mensal", "menu-depois", "menu-depois"]);
+  assert.equal(c.k("estado").dado.tela, "menu", "uma vez por dia");
+  assert.ok(c.k("acompanhar", "revisao-feita").ok);
+  naManha(c);
+  assert.equal(c.k("estado").dado.tela, "menu", "revisao feita: nao volta antes de 30 dias");
+  const cfg2 = c.lerJson("config.json"); cfg2.acompanhamento.ultimaRevisao = dia(31); c.gravar("config.json", cfg2);
+  naManha(c);
+  assert.equal(c.k("estado").dado.tela, "revisao", "passados 30 dias, volta a perguntar");
+  assert.ok(c.k("acompanhar", "contratada").ok);
+  const cfg3 = c.lerJson("config.json"); cfg3.acompanhamento.ultimaRevisao = dia(90); c.gravar("config.json", cfg3);
+  naManha(c);
+  assert.equal(c.k("estado").dado.tela, "menu", "contratada: nunca mais");
+  assert.equal(c.k("acompanhar", "xis").ok, false);
+
+  const novo = novaCasa(); comPerfilConfirmado(novo);
+  const cn = novo.lerJson("config.json"); cn.criadoEm = dia(10); novo.gravar("config.json", cn); naManha(novo);
+  assert.equal(novo.k("estado").dado.tela, "menu", "conta recente nao e cobrada");
+  const sc = novaCasa(); sc.k("config-set", "areas", "design"); const cs = sc.lerJson("config.json"); cs.criadoEm = dia(60); sc.gravar("config.json", cs); naManha(sc);
+  assert.equal(sc.k("estado").dado.tela, "menu", "sem curriculo nao ha o que revisar");
+});
+
+test("ROTEIRO · os procedimentos novos estao no SKILL.md", () => {
+  for (const proc of ["marcar-mostradas", "marcar-todas-mostradas", "nenhuma-mostrada", "menu-depois", "orientar-gupy", "gupy-proximo", "revisao-mensal"]) {
+    assert.ok(new RegExp(`\\*\\*${proc}\\*\\*`).test(SKILL), `falta ${proc} no SKILL.md`);
+  }
 });

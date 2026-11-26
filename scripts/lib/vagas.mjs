@@ -11,7 +11,8 @@ import { semAcento } from "./texto.mjs";
 
 export const STATUS = ["novo", "interessante", "preparado", "enviado", "visitaram", "respondeu", "rejeitado", "aceito", "ignorado"];
 const TRATADAS = ["preparado", "enviado", "visitaram", "respondeu", "rejeitado", "aceito"];
-export const DIAS_PARADA = 10;
+export const DIAS_PARADA = 7;
+const MAX_PERGUNTAS_SEM_RESPOSTA = 2;
 const HORAS_CACHE = 3;
 
 async function listaDeEmpresas() {
@@ -260,6 +261,7 @@ export async function marcar(curto, status, nota = "") {
   v.historico = [...(v.historico ?? []), { em: hoje(), status, nota }];
   if (status === "enviado" && !v.enviadoEm) v.enviadoEm = hoje();
   if (nota) v.notas = nota;
+  if (status === "enviado" && /^sem resposta/i.test(nota)) v.semRespostaVezes = (v.semRespostaVezes ?? 0) + 1;
   await salvarVagas(estado);
   if (status === "enviado") {
     const config = await carregarConfig();
@@ -276,7 +278,7 @@ export async function candidaturas() {
     .sort((a, b) => (b.enviadoEm ?? "").localeCompare(a.enviadoEm ?? ""))
     .map((v) => {
       const ultima = (v.historico ?? []).at(-1)?.em ?? v.enviadoEm ?? v.ultimaVez;
-      const parada = v.status === "enviado" && ultima && diasEntre(ultima) >= DIAS_PARADA;
+      const parada = v.status === "enviado" && ultima && diasEntre(ultima) >= DIAS_PARADA && (v.semRespostaVezes ?? 0) < MAX_PERGUNTAS_SEM_RESPOSTA;
       return { curto: v.curto, empresa: v.empresa, titulo: v.titulo, url: v.url, status: v.status, enviadoEm: v.enviadoEm ?? null, parada: Boolean(parada), diasSemNovidade: ultima ? diasEntre(ultima) : null };
     });
   return { total: lista.length, paradas: lista.filter((c) => c.parada), lista };

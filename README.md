@@ -14,6 +14,12 @@ Feito por Felipe Ribeiro, designer de produto e fundador do [Decision Brief](htt
 4. **Monta o currículo e uma carta curta** para a vaga que você escolher. Se faltar informação (um número, o link do seu GitHub ou portfólio), ele pergunta. Os PDFs saem em 3 visuais para você comparar.
 5. **Você revisa e envia**, no site da empresa. O kit só guarda o status das suas candidaturas e avisa quando uma ficar parada.
 
+## O kit acompanha você depois do envio
+
+- **Ao voltar**, se você viu vagas e não marcou nada, o kit pergunta se enviou alguma e quais. Depois de 7 dias de uma candidatura, pergunta se teve resposta (no máximo 2 vezes por vaga).
+- **Vaga da Gupy:** a Gupy usa o perfil que você preenche nela, não o PDF. O kit pergunta uma vez se o perfil está atualizado e, se não, entrega um bloco por vez para você copiar (experiências, habilidades, "Apresente-se"). Ele não entra na sua conta nem preenche nada.
+- **A cada 30 dias**, pergunta se seu currículo e seu portfólio estão atualizados, até você dizer que foi contratada. O kit só pergunta quando você o abre.
+
 ## A regra que não muda
 
 Só entra no currículo o que **você confirmou**. Antes de montar o PDF, o kit mostra todos os fatos que leu do seu currículo numa tela só, e você responde "Todos certos", "Corrigir um" ou "Mais tarde". Um número que não está num fato confirmado trava a geração do pacote. Se você não souber medir um resultado, ele fica sem número: o kit nunca inventa.
