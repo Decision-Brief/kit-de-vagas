@@ -186,6 +186,12 @@ test("comparar: recomendada primeiro, 'pular' por ultimo, e as velhas sao avisad
   assert.equal(o.n, 3);
 });
 
+test("ler-pdf: recusa o que nao e PDF e o que nao existe", async () => {
+  const { lerPdf } = await import("../scripts/lib/pdf.mjs");
+  await assert.rejects(() => lerPdf("/tmp/nao-existe-kit.pdf"), /Nao achei/);
+  await assert.rejects(() => lerPdf("/tmp/curriculo.txt"), /nao e um PDF/);
+});
+
 test("gancho: nega tudo dentro do leitor de vaga e nao opina fora dele", () => {
   const roda = (entrada) => spawnSync("node", [join(RAIZ, "scripts/guard.mjs")], { input: JSON.stringify(entrada), encoding: "utf8" });
   const dentro = roda({ tool_name: "Bash", agent_type: "vagas:leitor-de-vaga" });

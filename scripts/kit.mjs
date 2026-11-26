@@ -9,6 +9,7 @@ import {
   adicionarEmpresa, candidaturas, coletar, importarColada, listar, marcar, salvarAvaliacao, textoParaLeitor,
 } from "./lib/vagas.mjs";
 import { gerarPacote } from "./lib/cv.mjs";
+import { lerPdf } from "./lib/pdf.mjs";
 import {
   abrirLista, estado, feedbackProxima, feedbackRegistrar, telaCandidaturas, telaComparar, telaEntendi, telaFatosLote, telaSoOlhar, telaVaga,
 } from "./lib/telas.mjs";
@@ -75,6 +76,10 @@ const COMANDOS = {
     c.ultimaColeta = null;
     await salvarConfig(c);
     saida(c);
+  },
+
+  async "ler-pdf"() {
+    saida(await lerPdf(args.join(" ")));
   },
 
   async "perfil-resumo"() {

@@ -31,7 +31,7 @@ Você conduz uma conversa guiada. **Cada tela vem do programa do kit, não de vo
 
 ## Procedimentos
 
-**cv-primeiro**: peça o currículo, colado ou o caminho do arquivo (leia o arquivo com a ferramenta Read; PDF funciona). Leia **tudo de uma vez** e grave sem inventar nada, copiando o que está escrito:
+**cv-primeiro**: peça o currículo, colado ou o caminho do arquivo. Se for PDF, rode `KIT ler-pdf <caminho>` (não use outras ferramentas para PDF); se vier erro, peça para colar o texto. Outros arquivos de texto, leia com a ferramenta Read. Leia **tudo de uma vez** e grave sem inventar nada, copiando o que está escrito:
 - Contato: `KIT contato <<'EOF'` com `{"nome","email","telefone","local","linkedin","github","portfolio"}` e `EOF`.
 - Fatos: `KIT fato-propor <<'EOF'` com uma lista JSON. Até 10 resultados concretos: `{"tipo":"resultado","empresa","cargo","periodo","texto"}`. Cada competência ou grupo de tecnologias: `{"tipo":"competencia","texto":"Go, PostgreSQL"}`. Cada formação: `{"tipo":"formacao","texto"}` e cada idioma: `{"tipo":"idioma","texto"}`, **sem** o prefixo "Formação:" ou "Idiomas:".
 - Busca: `KIT config-set areas <a,b>` (desenvolvimento, design, produto, dados), `KIT config-set nivel <pleno|senior|lead>`, `KIT config-set local <brasil|global>` (padrão brasil) e `KIT config-set palavras go,kafka,figma` com as tecnologias dela. Se `areas` já estava definida, não a troque.
