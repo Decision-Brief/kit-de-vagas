@@ -26,10 +26,24 @@ Só entra no currículo o que **você confirmou**. Na primeira vez, o kit lê o 
 ## Instalar
 
 **No app do Claude (aba Code):**
-1. Abra **Configurações > Plugins > Adicionar > Adicionar marketplace > Adicionar de um repositório**.
-2. Cole `Decision-Brief/kit-de-vagas`.
-3. Instale o plugin **Vagas** e clique em **Continuar** no aviso de segurança.
-4. Na aba **Code**, escolha uma pasta, clique em **Confiar no espaço de trabalho** e digite `/vagas:inicio`.
+
+1. Abra **Configurações > Plugins**, clique em **Adicionar** e escolha **Adicionar marketplace**.
+
+   ![Menu Adicionar, com a opção Adicionar marketplace](docs/img/1-adicionar-marketplace.png)
+
+2. Escolha **Adicionar de um repositório** e cole `Decision-Brief/kit-de-vagas`.
+
+   ![Janela Adicionar marketplace, com a opção Adicionar de um repositório](docs/img/2-adicionar-de-um-repositorio.png)
+
+3. O plugin **Vagas** aparece na lista. Clique em **Adicionar a este computador**.
+
+   ![Plugin Vagas, por Felipe Ribeiro](docs/img/3-plugin-vagas.png)
+
+4. O app avisa que o plugin executa código no seu computador. Esse aviso aparece para qualquer plugin com scripts. Se você confia no autor, clique em **Continuar**.
+
+   ![Aviso de que o plugin pode executar código](docs/img/4-aviso-de-seguranca.png)
+
+5. Vá para a aba **Code**, escolha uma pasta, clique em **Confiar no espaço de trabalho** e digite `/vagas:inicio`.
 
 **No terminal (Claude Code):** cole **um comando de cada vez**, esperando cada um terminar:
 
