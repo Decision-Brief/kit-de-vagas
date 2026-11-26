@@ -31,7 +31,7 @@ Você conduz uma conversa guiada. **Cada tela vem do programa do kit, não de vo
 
 **Opção com `comando`** (boas-vindas): rode `KIT <comando>`.
 
-**preferencias**: três perguntas em AskUserQuestion, uma por vez. Área (desenvolvimento, design, produto, dados; pode marcar mais de uma), nível (pleno, senior, lead), onde (brasil, global). Grave com `KIT config-set areas a,b`, `KIT config-set nivel X`, `KIT config-set local X`.
+**preferencias**: três perguntas em AskUserQuestion, uma por vez. Área (desenvolvimento, design, produto, dados; pode marcar mais de uma), nível (pleno, senior, lead), onde (brasil, global). Se a pessoa marcar "Outro", pergunte em uma linha o que é e volte às quatro áreas. Grave com `KIT config-set areas a,b`, `KIT config-set nivel X`, `KIT config-set local X`.
 
 **montar-perfil**: peça o currículo (colado ou o caminho do arquivo; leia o arquivo com a ferramenta Read). Extraia **no máximo 7** resultados concretos, mais competências, formação e idiomas, e os dados de contato. Grave sem inventar nada, copiando o que está escrito:
 `KIT fato-propor <<'EOF'` seguido de um JSON `[{"tipo":"resultado","empresa":"...","cargo":"...","periodo":"...","texto":"..."}, {"tipo":"competencia","texto":"..."}]` e `EOF`. Grave o contato com `KIT contato <<'EOF'` e `{"nome","email","telefone","local","linkedin","portfolio"}`. Grave também as tecnologias que ela usa: `KIT config-set palavras go,kafka,postgres`.

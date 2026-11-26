@@ -50,19 +50,21 @@ const COMANDOS = {
   async "config-set"() {
     const [chave, ...resto] = args;
     const valor = resto.join(" ").trim();
+    // Aceita "Pleno", "Sênior", "Brasil": o que importa e o sentido, nao a grafia.
+    const norm = valor.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     if (chave === "feedback") return saida(await definirFeedback(sim(valor)));
     const c = await carregarConfig();
     if (chave === "areas") {
-      const lista = valor.split(/[,\s]+/).map((x) => x.trim().toLowerCase()).filter(Boolean);
+      const lista = norm.split(/[,\s]+/).map((x) => x.trim()).filter(Boolean);
       const ruins = lista.filter((a) => !AREAS.areas[a]);
       if (ruins.length || !lista.length) throw new Error(`Areas validas: ${Object.keys(AREAS.areas).join(", ")}.`);
       c.areas = lista;
     } else if (chave === "nivel") {
-      if (!["pleno", "senior", "lead"].includes(valor)) throw new Error("Niveis validos: pleno, senior, lead.");
-      c.nivel = valor;
+      if (!["pleno", "senior", "lead"].includes(norm)) throw new Error("Niveis validos: pleno, senior, lead.");
+      c.nivel = norm;
     } else if (chave === "local") {
-      if (!["brasil", "global"].includes(valor)) throw new Error("Locais validos: brasil, global.");
-      c.local = valor;
+      if (!["brasil", "global"].includes(norm)) throw new Error("Locais validos: brasil, global.");
+      c.local = norm;
     } else if (chave === "palavras") {
       c.palavrasChave = valor.split(",").map((x) => x.trim()).filter(Boolean).slice(0, 20);
     } else if (chave === "gupy") {

@@ -4,6 +4,8 @@ Acha vagas de tecnologia, avalia cada uma contra o seu perfil e monta o currícu
 
 Feito por Felipe Ribeiro, designer de produto e fundador do [Decision Brief](https://decision-brief.com).
 
+> **Atenção: use o Claude Code, não o chat.** No app do Claude, é a aba **Code**. Ou o terminal. No chat comum o kit não funciona.
+
 ## O que ele faz
 
 1. **Procura vagas** nas páginas públicas de centenas de empresas (Greenhouse, Ashby, Lever, Workable), em feeds de vagas remotas e na Gupy. Quem procura é um programa comum, sem IA, e dá uma nota de 0 a 100 por regra.
@@ -23,11 +25,23 @@ Só entra no currículo o que **você confirmou**. Na primeira vez, o kit lê o 
 
 ## Instalar
 
-No Claude Code:
+**No app do Claude (aba Code):**
+1. Abra **Configurações > Plugins > Adicionar > Adicionar marketplace > Adicionar de um repositório**.
+2. Cole `Decision-Brief/kit-de-vagas`.
+3. Instale o plugin **Vagas** e clique em **Continuar** no aviso de segurança.
+4. Na aba **Code**, escolha uma pasta, clique em **Confiar no espaço de trabalho** e digite `/vagas:inicio`.
+
+**No terminal (Claude Code):** cole **um comando de cada vez**, esperando cada um terminar:
 
 ```
 /plugin marketplace add Decision-Brief/kit-de-vagas
+```
+
+```
 /plugin install vagas@kit-de-vagas
+```
+
+```
 /vagas:inicio
 ```
 
