@@ -466,7 +466,7 @@ test("PÁGINA DA LISTA · conteúdo, escape e ausência de recursos externos", (
   assert.match(html, /Quem faz este kit/);
   assert.match(html, /Quem se candidata é você/);
   assert.match(html, /Conheça o Decision Brief/);
-  assert.match(html, /decision-brief\.com\/\?origem=kit/);
+  assert.match(html, /decision-brief\.com\?utm_source=kit-de-vagas.*origem=kit/);
   assert.match(html, /<summary>Termos de uso do kit<\/summary>/);
   assert.match(html, /TERMOS\.md/);
   assert.match(html, /Gupy restringe/);

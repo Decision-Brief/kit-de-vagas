@@ -114,7 +114,7 @@ ${blocoEnviadas(enviadas)}
 <section class="card produto" aria-labelledby="prod-t">
 <h2 id="prod-t">Conheça o Decision Brief</h2>
 <p>Decisões importantes costumam ficar espalhadas em conversas e planilhas. O Decision Brief registra uma decisão por documento: a posição antes da evidência, de onde vem cada dado, o que falta, quem responde e quando revisar. Serve para decisões de equipe e também para as pessoais difíceis, como escolher entre duas ofertas de emprego.</p>
-<a class="go2" href="https://decision-brief.com/?origem=kit" target="_blank" rel="noopener noreferrer">Conhecer o Decision Brief<span class="sr"> (abre em outra aba)</span> ↗</a>
+<a class="go2" href="https://decision-brief.com?utm_source=kit-de-vagas&utm_medium=github&utm_campaign=descoberta&origem=kit" target="_blank" rel="noopener noreferrer">Conhecer o Decision Brief<span class="sr"> (abre em outra aba)</span> ↗</a>
 </section>
 <details class="termos">
 <summary>Termos de uso do kit</summary>

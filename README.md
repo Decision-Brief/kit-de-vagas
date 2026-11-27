@@ -2,7 +2,7 @@
 
 Acha vagas de tecnologia, avalia cada uma contra o seu perfil e monta o currículo sob medida. Roda no seu Claude Code, em português, e **nunca envia nada por você**.
 
-Feito por Felipe Ribeiro, designer de produto e fundador do [Decision Brief](https://decision-brief.com), um produto que registra uma decisão por documento: a posição antes da evidência, de onde vem cada dado, o que falta, quem responde e quando revisar. Dá para usar também nas decisões pessoais difíceis, como escolher entre duas ofertas. O kit é independente e gratuito, e a lista de vagas traz um bloco com essa apresentação.
+Feito por Felipe Ribeiro, designer de produto e fundador do [Decision Brief](https://decision-brief.com?utm_source=kit-de-vagas&utm_medium=github&utm_campaign=descoberta), um produto que registra uma decisão por documento: a posição antes da evidência, de onde vem cada dado, o que falta, quem responde e quando revisar. Dá para usar também nas decisões pessoais difíceis, como escolher entre duas ofertas. O kit é independente e gratuito, e a lista de vagas traz um bloco com essa apresentação.
 
 > **Atenção: use o Claude Code, não o chat.** No app do Claude, é a aba **Code**. Ou o terminal. No chat comum o kit não funciona.
 
