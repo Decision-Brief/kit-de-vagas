@@ -33,7 +33,7 @@ function novaCasa() {
 }
 
 function vagaFixa(i, over = {}) {
-  const curto = `a${i}`.padEnd(7, "0").slice(0, 7);
+  const curto = i < 10 ? `a${i}`.padEnd(7, "0").slice(0, 7) : `b${i}`.padEnd(7, "0").slice(0, 7); // sem colisao quando i >= 10
   return {
     id: `fx:${i}`, curto, fonte: "greenhouse", empresa: `Empresa ${String.fromCharCode(64 + i)}`, titulo: `Engenheiro Backend ${i}`,
     local: "São Paulo, Brasil", remoto: false, url: `https://exemplo.com/vaga-${i}`, equipe: "", publicadoEm: dia(i * 3),
@@ -707,4 +707,33 @@ test("ROTEIRO · os procedimentos novos estao no SKILL.md", () => {
   for (const proc of ["marcar-mostradas", "marcar-todas-mostradas", "nenhuma-mostrada", "menu-depois", "orientar-gupy", "gupy-proximo", "revisao-mensal"]) {
     assert.ok(new RegExp(`\\*\\*${proc}\\*\\*`).test(SKILL), `falta ${proc} no SKILL.md`);
   }
+});
+
+test("LISTA · etiqueta de já enviada, aviso de mesma empresa e mais vagas recolhidas", () => {
+  const c = novaCasa();
+  c.k("config-set", "areas", "design");
+  semearVagas(c, 24, (i) => {
+    if (i === 1) return { empresa: "Asaas", titulo: "Product Designer Pix", status: "enviado", enviadoEm: "2026-11-26", historico: [{ em: "2026-11-26", status: "enviado" }] };
+    if (i === 2) return { empresa: "Asaas", titulo: "Product Designer Marketplace" };
+    if (i === 3) return { empresa: "Asaas", titulo: "Product Designer Pix" }; // a mesma vaga publicada de novo
+    return {};
+  });
+  const l = c.k("abrir-lista").dado;
+  conferirTela("lista", l);
+  assert.equal(l.itens.length, 5);
+  assert.ok(!l.itens.some((i) => i.titulo === "Product Designer Pix"), "a vaga repetida de uma ja enviada nao volta");
+  const html = readFileSync(c.arq("vagas-de-hoje.html"), "utf8");
+  assert.match(html, /Ver mais 15 vagas que combinam/);
+  assert.match(html, /Já enviadas \(1\)/);
+  assert.match(html, /Já enviada em 26\/11\/2026/);
+  assert.ok((html.match(/Você já enviou outra vaga nesta empresa/g) ?? []).length >= 1, "aviso de mesma empresa");
+  assert.ok(!/javascript:/i.test(html));
+  assert.match(html, /Abrir vaga 6:/, "as vagas recolhidas continuam a numeracao");
+  const vs = c.lerJson("vagas.json").vagas;
+  assert.equal(Object.values(vs).filter((v) => v.mostradaEm).length, 5, "so as 5 do topo contam como mostradas");
+
+  const pouco = novaCasa(); pouco.k("config-set", "areas", "design"); semearVagas(pouco, 5);
+  pouco.k("abrir-lista");
+  const h2 = readFileSync(pouco.arq("vagas-de-hoje.html"), "utf8");
+  assert.ok(!/Ver mais/.test(h2) && !/Já enviadas/.test(h2), "sem vagas extras nem enviadas, as secoes nao aparecem");
 });

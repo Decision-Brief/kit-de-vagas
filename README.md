@@ -9,7 +9,7 @@ Feito por Felipe Ribeiro, designer de produto e fundador do [Decision Brief](htt
 ## O que ele faz
 
 1. **Pergunta se você já tem um currículo.** É opcional. Se tiver, ele lê o arquivo, entende o que você procura (área, nível, tecnologias) e a busca já sai do seu tamanho. Se não tiver, você só escolhe a área.
-2. **Mostra as vagas numa página no navegador**, com 5 vagas: nota, há quantos dias foi publicada (com aviso quando passa de 60 dias) e o botão **Abrir vaga**, que leva direto à página da empresa. Quem procura é um programa comum, sem IA.
+2. **Mostra as vagas numa página no navegador**, com 5 vagas: nota, há quantos dias foi publicada (com aviso quando passa de 60 dias) e o botão **Abrir vaga**, que leva direto à página da empresa. Quem procura é um programa comum, sem IA. A página traz até 15 vagas a mais recolhidas em "Ver mais", avisa quando você já enviou outra vaga na mesma empresa e guarda as já enviadas, com a data, numa área recolhida. Uma vaga já enviada nunca volta à lista.
 3. **Você decide sozinha, ou pede uma comparação.** Na comparação, a IA lê cada vaga contra o seu currículo e diz qual combina mais, o que falta e se vale aplicar.
 4. **Monta o currículo e uma carta curta** para a vaga que você escolher. Se faltar informação (um número, o link do seu GitHub ou portfólio), ele pergunta. Os PDFs saem em 3 visuais para você comparar.
 5. **Você revisa e envia**, no site da empresa. O kit só guarda o status das suas candidaturas e avisa quando uma ficar parada.

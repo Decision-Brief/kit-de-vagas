@@ -126,7 +126,7 @@ export async function abrirLista({ revisitar = false, abrirNavegador = true, cur
   }
   const cfg = await carregarConfig();
   const atualizadaEm = cfg.ultimaColeta ? new Date(cfg.ultimaColeta).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : null;
-  const arquivo = await escreverLista({ vagas: l.vagas, lidas: l.lidas, combinam: l.combinam, comPerfil, data: dataBR(), atualizadaEm });
+  const arquivo = await escreverLista({ vagas: l.vagas, mais: l.mais ?? [], enviadas: l.enviadas ?? [], lidas: l.lidas, combinam: l.combinam, comPerfil, data: dataBR(), atualizadaEm });
   const aberta = abrirNavegador ? abrir(arquivo) : false;
   if (!curtos) await marcarMostradas(l.vagas.map((v) => v.curto), l.combinam);
   const linhas = l.vagas.map((v, i) => {

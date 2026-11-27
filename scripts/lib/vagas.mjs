@@ -117,10 +117,19 @@ function combinaCom(v, palavras) {
 }
 
 // Por padrao a lista traz so vagas que a pessoa ainda nao viu. revisitar = true traz tambem as ja mostradas.
+export const MAIS_VAGAS = 15;
+const chaveEmpresa = (v) => norm(v.empresa ?? "").replace(/[^a-z0-9]/g, "");
+const chaveVaga = (v) => `${chaveEmpresa(v)}|${norm(v.titulo ?? "").replace(/[^a-z0-9]/g, "")}`;
+
 export async function listar(n = 5, { revisitar = false } = {}) {
   const estado = await carregarVagas();
   const config = await carregarConfig();
-  const candidatas = Object.values(estado.vagas).filter((v) => v.ativa && v.status === "novo" && v.score >= 45);
+  const tratadas = Object.values(estado.vagas).filter((v) => TRATADAS.includes(v.status));
+  const porEmpresa = new Map();
+  for (const t of tratadas) porEmpresa.set(chaveEmpresa(t), (porEmpresa.get(chaveEmpresa(t)) ?? 0) + 1);
+  const jaEnviadas = new Set(tratadas.map(chaveVaga));
+  // A mesma vaga publicada de novo (mesma empresa e mesmo titulo) nao volta: a pessoa ja agiu sobre ela.
+  const candidatas = Object.values(estado.vagas).filter((v) => v.ativa && v.status === "novo" && v.score >= 45 && !jaEnviadas.has(chaveVaga(v)));
   const jaMostradas = candidatas.filter((v) => v.mostradaEm).length;
   const abertas = candidatas
     .filter((v) => revisitar || !v.mostradaEm)
@@ -131,7 +140,11 @@ export async function listar(n = 5, { revisitar = false } = {}) {
     lidas: estado.ultimaLeitura?.lidas ?? todas,
     combinam: abertas.length,
     jaMostradas,
-    vagas: abertas.slice(0, n).map((v) => itemDe(v, config)),
+    vagas: abertas.slice(0, n).map((v) => ({ ...itemDe(v, config), mesmaEmpresa: porEmpresa.get(chaveEmpresa(v)) ?? 0 })),
+    mais: abertas.slice(n, n + MAIS_VAGAS).map((v) => ({ ...itemDe(v, config), mesmaEmpresa: porEmpresa.get(chaveEmpresa(v)) ?? 0 })),
+    enviadas: tratadas
+      .sort((a, b) => (b.enviadoEm ?? "").localeCompare(a.enviadoEm ?? ""))
+      .map((v) => ({ curto: v.curto, empresa: v.empresa, titulo: v.titulo, url: v.url, status: v.status, enviadoEm: v.enviadoEm ?? null })),
   };
 }
 

@@ -54,6 +54,15 @@ h1{font:600 28px/1.2 Georgia,"Times New Roman",serif;margin:0}
 .go2{display:inline-flex;align-items:center;min-height:44px;margin-top:12px;padding:0 16px;border:2px solid var(--teal);border-radius:8px;color:var(--deep);font:700 14px/1.2 system-ui,sans-serif;text-decoration:none}
 .go2:hover{background:var(--paper)}
 .go2:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+details.mais{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:0 18px;margin-top:16px}
+details.mais summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font:700 15px/1.3 system-ui,sans-serif}
+details.mais summary:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.mini{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:8px}
+.mini li{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:8px}
+.mini li>div{min-width:0;flex:1 1 260px}.mini b{font-size:15px}
+.mini a{color:var(--deep);min-height:44px;display:inline-flex;align-items:center;font-weight:700;font-size:14px}
+.dica{font-size:14px;color:var(--soft);margin:0 0 12px}
+.chip.feita{background:var(--amberw);color:var(--amber)}
 details.termos{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:0 18px;margin-top:16px}
 details.termos summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font:700 15px/1.3 system-ui,sans-serif}
 details.termos summary:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
@@ -66,7 +75,8 @@ footer{color:var(--soft);font-size:13px;margin-top:20px}
 @media (max-width:560px){.job{grid-template-columns:1fr}.go{grid-column:1;grid-row:auto;text-align:center}}
 `;
 
-export function htmlLista({ vagas, lidas, combinam, comPerfil, data, atualizadaEm = null }) {
+export function htmlLista({ vagas, mais = [], enviadas = [], lidas, combinam, comPerfil, data, atualizadaEm = null }) {
+  const base = vagas.length;
   const cards = vagas.map((v, i) => {
     const dias = idadeDias(v.publicadoEm);
     const velha = dias !== null && dias >= DIAS_AVISO;
@@ -75,6 +85,7 @@ export function htmlLista({ vagas, lidas, combinam, comPerfil, data, atualizadaE
       `<span class="chip nota">Nota ${v.score}</span>`,
       v.rank ? `<span class="chip nota">Combina nº ${v.rank}</span>` : "",
       ...(v.combinaCom ?? []).slice(0, 4).map((k) => `<span class="chip">${escHtml(k)}</span>`),
+      v.mesmaEmpresa ? `<span class="chip warn">Você já enviou ${v.mesmaEmpresa === 1 ? "outra vaga" : `${v.mesmaEmpresa} vagas`} nesta empresa</span>` : "",
       velha ? `<span class="chip warn">publicada ${escHtml(textoIdade(dias))}: confira se ainda está aberta</span>` : "",
       ...(v.flags ?? []).slice(0, 2).map((f) => `<span class="chip warn">${escHtml(f)}</span>`),
     ].join("");
@@ -94,6 +105,8 @@ export function htmlLista({ vagas, lidas, combinam, comPerfil, data, atualizadaE
 <ol class="jobs">
 ${cards}
 </ol>
+${blocoMais(mais, base)}
+${blocoEnviadas(enviadas)}
 <section class="card" aria-labelledby="quem-t">
 <h2 id="quem-t">Quem faz este kit</h2>
 <p>Feito por Felipe Ribeiro, designer de produto e fundador do Decision Brief. O kit lê páginas públicas de vagas e organiza a sua busca, tudo no seu computador. <strong>Quem se candidata é você:</strong> o kit nunca envia nada por você nem entra nas suas contas.</p>
@@ -118,6 +131,35 @@ ${cards}
 <footer>Gerada no seu computador pelo Kit de Vagas. Volte ao Claude Code para comparar ou montar o currículo. Se mudou algo lá, recarregue esta página.</footer>
 </main></body></html>
 `;
+}
+
+function blocoMais(mais, base) {
+  if (!mais.length) return "";
+  const itens = mais.map((v, i) => {
+    const link = linkSeguro(v.url);
+    const dias = idadeDias(v.publicadoEm);
+    const aviso = v.mesmaEmpresa ? ` · <span class="chip warn">Você já enviou ${v.mesmaEmpresa === 1 ? "outra vaga" : `${v.mesmaEmpresa} vagas`} nesta empresa</span>` : "";
+    return `<li><div><b>${base + i + 1}. ${escHtml(v.titulo)}</b><br><span class="sub">${escHtml(v.empresa)} · ${escHtml(v.local || "local não informado")} · ${escHtml(textoIdade(dias))} · nota ${v.score}</span>${aviso}</div>${link ? `<a href="${escHtml(link)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir vaga ${base + i + 1}: ${escHtml(v.titulo)}, ${escHtml(v.empresa)} (abre em outra aba)">Abrir vaga ↗</a>` : ""}</li>`;
+  }).join("\n");
+  return `<details class="mais"><summary>Ver mais ${mais.length} vaga${mais.length > 1 ? "s" : ""} que combinam</summary>
+<p class="dica">Para comparar uma delas com o seu currículo, volte ao Claude Code e escolha "Avaliar uma vaga que eu colei", com o link.</p>
+<ul class="mini">
+${itens}
+</ul></details>`;
+}
+
+function blocoEnviadas(enviadas) {
+  if (!enviadas.length) return "";
+  const itens = enviadas.map((c) => {
+    const link = linkSeguro(c.url);
+    const rotulo = ROTULO_STATUS[c.status] ?? c.status;
+    return `<li><div><b>${escHtml(c.titulo)}</b><br><span class="sub">${escHtml(c.empresa)}</span> <span class="chip feita">${c.enviadoEm ? `Já enviada em ${escHtml(dataBR(c.enviadoEm))}` : escHtml(rotulo)}</span></div>${link ? `<a href="${escHtml(link)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir vaga: ${escHtml(c.titulo)}, ${escHtml(c.empresa)} (abre em outra aba)">Abrir vaga ↗</a>` : ""}</li>`;
+  }).join("\n");
+  return `<details class="mais"><summary>Já enviadas (${enviadas.length})</summary>
+<p class="dica">Estas não voltam à lista. Se enviou alguma por fora, diga ao kit e ela aparece aqui.</p>
+<ul class="mini">
+${itens}
+</ul></details>`;
 }
 
 export async function escreverLista(dados) {
@@ -172,7 +214,7 @@ export function htmlCandidaturas({ lista, data }) {
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Minhas candidaturas · Kit de Vagas</title><style>${CSS}</style></head>
 <body><main>
 <h1>Minhas candidaturas</h1>
-<p class="meta">${lista.length} candidatura${lista.length === 1 ? "" : "s"}${resumo ? ` · ${escHtml(resumo)}` : ""}${paradas ? ` · ${paradas} parada${paradas > 1 ? "s" : ""} há mais de 10 dias` : ""} · ${escHtml(data)}</p>
+<p class="meta">${lista.length} candidatura${lista.length === 1 ? "" : "s"}${resumo ? ` · ${escHtml(resumo)}` : ""}${paradas ? ` · ${paradas} parada${paradas > 1 ? "s" : ""} há mais de 7 dias` : ""} · ${escHtml(data)}</p>
 <ol class="jobs">
 ${cards}
 </ol>
